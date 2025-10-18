@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catarse Home Studio - Sistema de Agendamento</title>
+    <title>Home Studio - Sistema de Agendamento</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
     <style>
         :root {
@@ -37,49 +37,97 @@
         }
         
         header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 0;
+            padding: 15px 0;
             border-bottom: 1px solid var(--border-color);
-            margin-bottom: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .header-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
         
         .logo {
             display: flex;
             align-items: center;
             gap: 15px;
+            justify-content: center;
         }
         
         .logo-image {
-            width: 70px;
-            height: 70px;
+            width: 50px;
+            height: 50px;
             border-radius: 8px;
             object-fit: contain;
-    
         }
         
         .logo-text {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: bold;
+            text-align: center;
         }
         
-        nav ul {
+        /* Menu responsivo */
+        nav {
+            width: 100%;
+        }
+        
+        .nav-container {
             display: flex;
-            list-style: none;
-            gap: 20px;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .nav-desktop {
+            display: none;
+        }
+        
+        .nav-mobile {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .mobile-menu-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 16px;
+        }
+        
+        .mobile-menu-content {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            background: var(--secondary-color);
+            border-radius: 4px;
+            padding: 10px;
+        }
+        
+        .mobile-menu-content.active {
+            display: flex;
         }
         
         nav a {
             color: var(--text-color);
             text-decoration: none;
-            padding: 8px 16px;
+            padding: 12px 16px;
             border-radius: 4px;
             transition: background-color 0.3s;
+            text-align: center;
+            display: block;
         }
         
         nav a:hover, nav a.active {
-            background-color: var(--secondary-color);
+            background-color: var(--accent-color);
         }
         
         .page {
@@ -92,27 +140,34 @@
         
         .calendar-header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 15px;
             margin-bottom: 20px;
+        }
+        
+        .calendar-title {
+            text-align: center;
         }
         
         .calendar-nav {
             display: flex;
             gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
         }
         
         .btn {
             background-color: var(--accent-color);
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 10px 16px;
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.3s;
             display: inline-flex;
             align-items: center;
             gap: 5px;
+            font-size: 14px;
         }
         
         .btn:hover {
@@ -142,19 +197,20 @@
         .calendar {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 10px;
-            margin-bottom: 30px;
+            gap: 5px;
+            margin-bottom: 20px;
         }
         
         .calendar-day {
             background-color: var(--secondary-color);
-            padding: 15px;
+            padding: 10px 5px;
             border-radius: 4px;
             text-align: center;
             cursor: pointer;
             transition: background-color 0.3s;
-            min-height: 80px;
+            min-height: 70px;
             position: relative;
+            font-size: 14px;
         }
         
         .calendar-day:hover {
@@ -170,47 +226,48 @@
         }
         
         .day-number {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
         
         .day-bookings {
-            font-size: 12px;
+            font-size: 11px;
             color: #aaa;
         }
         
         .booking-indicators {
             position: absolute;
-            bottom: 5px;
+            bottom: 3px;
             left: 0;
             right: 0;
             display: flex;
             justify-content: center;
-            gap: 3px;
+            gap: 2px;
         }
         
         .booking-indicator {
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             background-color: var(--accent-color);
         }
         
         .time-slots {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 10px;
-            margin-top: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 8px;
+            margin-top: 15px;
         }
         
         .time-slot {
             background-color: var(--secondary-color);
-            padding: 15px;
+            padding: 12px;
             border-radius: 4px;
             text-align: center;
             cursor: pointer;
             transition: background-color 0.3s;
+            font-size: 14px;
         }
         
         .time-slot:hover {
@@ -227,35 +284,34 @@
         }
         
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         
         label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-weight: bold;
+            font-size: 14px;
         }
         
         input, select, textarea {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             background-color: var(--secondary-color);
             border: 1px solid var(--border-color);
             border-radius: 4px;
             color: var(--text-color);
+            font-size: 14px;
         }
         
         .form-row {
             display: flex;
-            gap: 15px;
-        }
-        
-        .form-row .form-group {
-            flex: 1;
+            flex-direction: column;
+            gap: 10px;
         }
         
         .bookings-list {
-            margin-top: 20px;
+            margin-top: 15px;
         }
         
         .booking-item {
@@ -263,18 +319,18 @@
             padding: 15px;
             border-radius: 4px;
             margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
         
         .booking-info h3 {
             margin-bottom: 5px;
+            font-size: 16px;
         }
         
         .booking-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
         }
         
         .modal {
@@ -284,10 +340,11 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: rgba(0, 0, 0, 0.8);
             z-index: 1000;
             align-items: center;
             justify-content: center;
+            padding: 15px;
         }
         
         .modal.active {
@@ -296,10 +353,10 @@
         
         .modal-content {
             background-color: var(--primary-color);
-            padding: 30px;
+            padding: 20px;
             border-radius: 8px;
-            width: 90%;
-            max-width: 600px;
+            width: 100%;
+            max-width: 500px;
             border: 1px solid var(--border-color);
             max-height: 90vh;
             overflow-y: auto;
@@ -309,21 +366,22 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         
         .close-modal {
             background: none;
             border: none;
             color: var(--text-color);
-            font-size: 24px;
+            font-size: 20px;
             cursor: pointer;
         }
         
         .alert {
-            padding: 15px;
+            padding: 12px;
             border-radius: 4px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            font-size: 14px;
         }
         
         .alert-success {
@@ -336,18 +394,20 @@
         
         .report-controls {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
         }
         
         .report-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 15px;
+            font-size: 14px;
         }
         
         .report-table th, .report-table td {
-            padding: 12px;
+            padding: 10px;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
         }
@@ -374,79 +434,107 @@
         }
         
         .day-agendamentos {
-            margin-top: 20px;
+            margin-top: 15px;
         }
         
         .agendamento-detalhes {
             background-color: var(--secondary-color);
-            padding: 20px;
+            padding: 15px;
             border-radius: 4px;
-            margin-top: 20px;
+            margin-top: 15px;
         }
         
         .agendamento-detalhes h3 {
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             color: var(--accent-color);
+            font-size: 18px;
         }
         
         .agendamento-info {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
         }
         
         .info-item {
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         
         .info-label {
             font-weight: bold;
             color: #aaa;
+            font-size: 14px;
         }
         
         .activities-section {
-            margin-top: 20px;
+            margin-top: 15px;
         }
         
         .activities-section textarea {
-            min-height: 100px;
+            min-height: 80px;
         }
         
-        @media (max-width: 768px) {
-            .calendar {
-                grid-template-columns: repeat(7, 1fr);
-                gap: 5px;
+        /* Desktop */
+        @media (min-width: 768px) {
+            .header-content {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
             }
             
-            .calendar-day {
-                padding: 8px;
-                min-height: 60px;
+            .logo {
+                justify-content: flex-start;
             }
             
-            .day-number {
-                font-size: 14px;
+            .nav-container {
+                flex-direction: row;
+                align-items: center;
+            }
+            
+            .nav-desktop {
+                display: flex;
+                flex-direction: row;
+                gap: 10px;
+            }
+            
+            .nav-mobile {
+                display: none;
+            }
+            
+            .calendar-header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .calendar-title {
+                text-align: left;
             }
             
             .form-row {
-                flex-direction: column;
-                gap: 0;
-            }
-            
-            .booking-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-            
-            .booking-actions {
-                width: 100%;
-                justify-content: flex-end;
+                flex-direction: row;
             }
             
             .report-controls {
-                flex-direction: column;
-                gap: 10px;
+                flex-direction: row;
+                align-items: end;
+            }
+            
+            .agendamento-info {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 15px;
+            }
+            
+            .booking-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .booking-actions {
+                margin-top: 0;
             }
         }
     </style>
@@ -454,27 +542,46 @@
 <body>
     <div class="container">
         <header>
-            <div class="logo">
-                <img src="sua-logo-20-p-cento.jpg" alt="Home Studio" class="logo-image">
-                <div class="logo-text">Catarse Home Studio</div>
+            <div class="header-content">
+                <div class="logo">
+                    <img src="sua-logo-20-p-cento.jpg" alt="Home Studio" class="logo-image">
+                    <div class="logo-text">Home Studio</div>
+                </div>
+                
+                <nav>
+                    <div class="nav-container">
+                        <!-- Menu Desktop -->
+                        <div class="nav-desktop">
+                            <a href="#" class="nav-link active" data-page="calendar">Calendário</a>
+                            <a href="#" class="nav-link" data-page="clients">Clientes</a>
+                            <a href="#" class="nav-link" data-page="bookings">Agendamentos</a>
+                            <a href="#" class="nav-link" data-page="reports">Relatórios</a>
+                        </div>
+                        
+                        <!-- Menu Mobile -->
+                        <div class="nav-mobile">
+                            <button class="mobile-menu-btn">
+                                ☰ Menu
+                            </button>
+                            <div class="mobile-menu-content">
+                                <a href="#" class="nav-link active" data-page="calendar">Calendário</a>
+                                <a href="#" class="nav-link" data-page="clients">Clientes</a>
+                                <a href="#" class="nav-link" data-page="bookings">Agendamentos</a>
+                                <a href="#" class="nav-link" data-page="reports">Relatórios</a>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
             </div>
-            <nav>
-                <ul>
-                    <li><a href="#" class="nav-link active" data-page="calendar">Calendário</a></li>
-                    <li><a href="#" class="nav-link" data-page="clients">Clientes</a></li>
-                    <li><a href="#" class="nav-link" data-page="bookings">Agendamentos</a></li>
-                    <li><a href="#" class="nav-link" data-page="reports">Relatórios</a></li>
-                </ul>
-            </nav>
         </header>
         
-        <!-- Página do Calendário -->
+        <!-- Páginas do app (o restante do código permanece igual) -->
         <section id="calendar" class="page active">
             <div class="calendar-header">
-                <h2 id="current-month">Março 2023</h2>
+                <h2 class="calendar-title" id="current-month">Março 2023</h2>
                 <div class="calendar-nav">
-                    <button id="prev-month" class="btn btn-secondary">← Mês Anterior</button>
-                    <button id="next-month" class="btn btn-secondary">Próximo Mês →</button>
+                    <button id="prev-month" class="btn btn-secondary">← Anterior</button>
+                    <button id="next-month" class="btn btn-secondary">Próximo →</button>
                 </div>
             </div>
             
@@ -552,34 +659,36 @@
             <h2>Relatório de Horas por Cliente</h2>
             
             <div class="report-controls">
-                <div>
+                <div class="form-group">
                     <label for="report-start-date">Data Inicial:</label>
                     <input type="date" id="report-start-date">
                 </div>
-                <div>
+                <div class="form-group">
                     <label for="report-end-date">Data Final:</label>
                     <input type="date" id="report-end-date">
                 </div>
                 <button id="generate-report" class="btn">Gerar Relatório</button>
             </div>
             
-            <table class="report-table">
-                <thead>
-                    <tr>
-                        <th data-sort="name">Cliente ▲</th>
-                        <th data-sort="hours">Horas Utilizadas ▲</th>
-                        <th data-sort="sessions">Nº de Sessões ▲</th>
-                        <th>Contato</th>
-                    </tr>
-                </thead>
-                <tbody id="report-body">
-                    <!-- Dados do relatório serão gerados via JavaScript -->
-                </tbody>
-            </table>
+            <div style="overflow-x: auto;">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th data-sort="name">Cliente ▲</th>
+                            <th data-sort="hours">Horas Utilizadas ▲</th>
+                            <th data-sort="sessions">Nº de Sessões ▲</th>
+                            <th>Contato</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-body">
+                        <!-- Dados do relatório serão gerados via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
         </section>
     </div>
     
-    <!-- Modal para Novo Agendamento -->
+    <!-- Modais (o restante do código permanece igual) -->
     <div id="booking-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -627,7 +736,6 @@
         </div>
     </div>
     
-    <!-- Modal para Detalhes do Agendamento -->
     <div id="booking-details-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -647,6 +755,25 @@
     </div>
 
     <script>
+        // Código JavaScript anterior permanece EXATAMENTE o mesmo
+        // Apenas adicionar esta função para o menu mobile:
+        
+        // Menu mobile toggle
+        document.querySelector('.mobile-menu-btn').addEventListener('click', function() {
+            const menuContent = document.querySelector('.mobile-menu-content');
+            menuContent.classList.toggle('active');
+        });
+        
+        // Fechar menu mobile ao clicar em um link
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                document.querySelector('.mobile-menu-content').classList.remove('active');
+            });
+        });
+
+        // O RESTANTE DO SEU CÓDIGO JAVASCRIPT ORIGINAL AQUI
+        // (Todo o código que já estava funcionando)
+        
         // Dados persistentes usando localStorage
         let clients = JSON.parse(localStorage.getItem('studio_clients')) || [];
         let bookings = JSON.parse(localStorage.getItem('studio_bookings')) || [];
@@ -1502,13 +1629,4 @@
         generateReport();
     </script>
 </body>
-
 </html>
-
-
-
-
-
-
-
-
