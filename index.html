@@ -850,7 +850,7 @@
     </div>
 
     <script>
-        // Código JavaScript ATUALIZADO com as novas funcionalidades
+        // Código JavaScript ATUALIZADO com correção do botão de cadastro
         
         // Menu mobile toggle
         document.querySelector('.mobile-menu-btn').addEventListener('click', function() {
@@ -1399,21 +1399,25 @@
             }
         });
         
-        // NOVO: Formulário de cliente ATUALIZADO
+        // CORREÇÃO: Formulário de cliente - Event Listener correto
         clientTypeSelect.addEventListener('change', () => {
             documentLabel.textContent = clientTypeSelect.value.toUpperCase();
         });
         
-        clientForm.addEventListener('submit', (e) => {
+        // CORREÇÃO: Event listener para o formulário de clientes
+        clientForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            console.log('Formulário de cliente enviado!'); // Debug
             
-            const type = clientTypeSelect.value;
+            const type = document.getElementById('client-type').value;
             const document = document.getElementById('client-document').value;
             const artisticName = document.getElementById('client-name').value;
             const phone = document.getElementById('client-phone').value;
             const email = document.getElementById('client-email').value;
             const notes = document.getElementById('client-notes').value;
-            const clientId = clientIdInput.value;
+            const clientId = document.getElementById('client-id').value;
+            
+            console.log('Dados:', { type, document, artisticName, phone, email, notes, clientId }); // Debug
             
             // Validações básicas
             if (!document || !artisticName || !phone) {
@@ -1477,15 +1481,18 @@
             
             renderClientsList();
             updateClientStats();
+            
+            // Atualiza o select de clientes no modal de agendamento
+            updateBookingClientSelect();
         });
         
         clientCancelBtn.addEventListener('click', resetClientForm);
         
         function resetClientForm() {
             clientForm.reset();
-            clientIdInput.value = '';
-            clientSubmitBtn.textContent = 'Cadastrar Cliente';
-            clientCancelBtn.style.display = 'none';
+            document.getElementById('client-id').value = '';
+            document.getElementById('client-submit-btn').textContent = 'Cadastrar Cliente';
+            document.getElementById('client-cancel-btn').style.display = 'none';
             editingClientId = null;
             
             // Foca no primeiro campo para facilitar novo cadastro
@@ -1501,6 +1508,19 @@
             setTimeout(() => {
                 alert.style.display = 'none';
             }, 5000);
+        }
+        
+        // NOVO: Atualizar select de clientes no modal de agendamento
+        function updateBookingClientSelect() {
+            if (bookingClientSelect) {
+                bookingClientSelect.innerHTML = '<option value="">Selecione um cliente</option>';
+                clients.forEach(client => {
+                    const option = document.createElement('option');
+                    option.value = client.id;
+                    option.textContent = `${client.artisticName} (${client.document})`;
+                    bookingClientSelect.appendChild(option);
+                });
+            }
         }
         
         // NOVO: Lista de clientes ATUALIZADA com ordenação
@@ -1631,17 +1651,17 @@
         function editClient(clientId) {
             const client = clients.find(c => c.id === clientId);
             if (client) {
-                clientIdInput.value = client.id;
-                clientTypeSelect.value = client.type;
-                documentLabel.textContent = client.type.toUpperCase();
+                document.getElementById('client-id').value = client.id;
+                document.getElementById('client-type').value = client.type;
+                document.getElementById('document-label').textContent = client.type.toUpperCase();
                 document.getElementById('client-document').value = client.document;
                 document.getElementById('client-name').value = client.artisticName;
                 document.getElementById('client-phone').value = client.phone;
                 document.getElementById('client-email').value = client.email || '';
                 document.getElementById('client-notes').value = client.notes || '';
                 
-                clientSubmitBtn.textContent = 'Atualizar Cliente';
-                clientCancelBtn.style.display = 'inline-block';
+                document.getElementById('client-submit-btn').textContent = 'Atualizar Cliente';
+                document.getElementById('client-cancel-btn').style.display = 'inline-block';
                 editingClientId = clientId;
                 
                 // Rola para o topo do formulário
@@ -1666,6 +1686,7 @@
                 saveClients();
                 renderClientsList();
                 updateClientStats();
+                updateBookingClientSelect();
                 alert('Cliente excluído com sucesso!');
             }
         }
@@ -1775,7 +1796,7 @@
             reportBody.innerHTML = '';
             
             if (reportData.length === 0) {
-                reportBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Nenhum dado encontrado para o período selecionado.</td></tr>';
+                reportBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Nenhum dado encontrado para o período seleçado.</td></tr>';
                 return;
             }
             
@@ -1837,6 +1858,7 @@
         renderClientsList();
         renderBookingsList();
         updateClientStats();
+        updateBookingClientSelect();
         
         // Define as datas padrão para o relatório
         const today = new Date();
@@ -1847,6 +1869,12 @@
         document.getElementById('report-end-date').value = today.toISOString().split('T')[0];
         
         generateReport();
+
+        // CORREÇÃO: Tornar funções globais para os event listeners
+        window.viewBookingDetails = viewBookingDetails;
+        window.saveCompletedActivities = saveCompletedActivities;
+        window.editClient = editClient;
+        window.deleteClient = deleteClient;
     </script>
 </body>
 </html>
