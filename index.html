@@ -474,6 +474,45 @@
         .activities-section textarea {
             min-height: 80px;
         }
+
+        /* NOVOS ESTILOS PARA CLIENTES */
+        .clients-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .clients-controls select, .clients-controls button {
+            width: auto;
+            min-width: 150px;
+        }
+
+        .client-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background-color: var(--secondary-color);
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #aaa;
+        }
         
         /* Desktop */
         @media (min-width: 768px) {
@@ -536,6 +575,20 @@
             .booking-actions {
                 margin-top: 0;
             }
+
+            .clients-controls {
+                flex-direction: row;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .clients-controls {
+                flex-direction: column;
+            }
+
+            .clients-controls select, .clients-controls button {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -575,7 +628,7 @@
             </div>
         </header>
         
-        <!-- Páginas do app (o restante do código permanece igual) -->
+        <!-- Páginas do app -->
         <section id="calendar" class="page active">
             <div class="calendar-header">
                 <h2 class="calendar-title" id="current-month">Março 2023</h2>
@@ -603,7 +656,7 @@
             </div>
         </section>
         
-        <!-- Página de Clientes -->
+        <!-- Página de Clientes - ATUALIZADA -->
         <section id="clients" class="page">
             <h2>Cadastro de Clientes</h2>
             
@@ -635,10 +688,52 @@
                     <label for="client-phone">Telefone de Contato</label>
                     <input type="tel" id="client-phone" required>
                 </div>
+
+                <div class="form-group">
+                    <label for="client-email">E-mail (opcional)</label>
+                    <input type="email" id="client-email">
+                </div>
+
+                <div class="form-group">
+                    <label for="client-notes">Observações</label>
+                    <textarea id="client-notes" rows="3" placeholder="Informações adicionais sobre o cliente..."></textarea>
+                </div>
                 
                 <button type="submit" class="btn" id="client-submit-btn">Cadastrar Cliente</button>
                 <button type="button" class="btn btn-secondary" id="client-cancel-btn" style="display: none;">Cancelar Edição</button>
             </form>
+
+            <!-- Estatísticas de Clientes -->
+            <div class="client-stats" id="client-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-clients">0</div>
+                    <div class="stat-label">Total de Clientes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="active-clients">0</div>
+                    <div class="stat-label">Clientes com Agendamentos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-hours">0h</div>
+                    <div class="stat-label">Horas Totais</div>
+                </div>
+            </div>
+            
+            <!-- Controles de Ordenação -->
+            <div class="clients-controls">
+                <select id="sort-clients">
+                    <option value="name">Ordenar por Nome</option>
+                    <option value="hours">Ordenar por Horas</option>
+                    <option value="sessions">Ordenar por Sessões</option>
+                    <option value="recent">Ordenar por Data</option>
+                </select>
+                <button class="btn btn-secondary" id="apply-client-sort">
+                    <i class="fas fa-sort"></i> Aplicar Ordenação
+                </button>
+                <button class="btn" id="export-clients">
+                    <i class="fas fa-download"></i> Exportar Clientes
+                </button>
+            </div>
             
             <div class="bookings-list" id="clients-list">
                 <!-- Lista de clientes será gerada via JavaScript -->
@@ -688,7 +783,7 @@
         </section>
     </div>
     
-    <!-- Modais (o restante do código permanece igual) -->
+    <!-- Modais -->
     <div id="booking-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -755,8 +850,7 @@
     </div>
 
     <script>
-        // Código JavaScript anterior permanece EXATAMENTE o mesmo
-        // Apenas adicionar esta função para o menu mobile:
+        // Código JavaScript ATUALIZADO com as novas funcionalidades
         
         // Menu mobile toggle
         document.querySelector('.mobile-menu-btn').addEventListener('click', function() {
@@ -771,9 +865,6 @@
             });
         });
 
-        // O RESTANTE DO SEU CÓDIGO JAVASCRIPT ORIGINAL AQUI
-        // (Todo o código que já estava funcionando)
-        
         // Dados persistentes usando localStorage
         let clients = JSON.parse(localStorage.getItem('studio_clients')) || [];
         let bookings = JSON.parse(localStorage.getItem('studio_bookings')) || [];
@@ -812,6 +903,15 @@
         const deleteBookingBtn = document.getElementById('delete-booking-btn');
         const bookingDetailsContent = document.getElementById('booking-details-content');
         
+        // NOVOS ELEMENTOS PARA CLIENTES
+        const sortClientsSelect = document.getElementById('sort-clients');
+        const applyClientSortBtn = document.getElementById('apply-client-sort');
+        const exportClientsBtn = document.getElementById('export-clients');
+        const clientStats = document.getElementById('client-stats');
+        const totalClientsElement = document.getElementById('total-clients');
+        const activeClientsElement = document.getElementById('active-clients');
+        const totalHoursElement = document.getElementById('total-hours');
+        
         // Estado da aplicação
         let currentDate = new Date();
         let selectedDate = null;
@@ -819,6 +919,7 @@
         let editingClientId = null;
         let editingBookingId = null;
         let currentSort = { column: 'hours', direction: 'desc' };
+        let clientSort = { column: 'name', direction: 'asc' };
         
         // Navegação entre páginas
         navLinks.forEach(link => {
@@ -837,6 +938,7 @@
                 // Atualiza listas se necessário
                 if (pageId === 'clients') {
                     renderClientsList();
+                    updateClientStats();
                 } else if (pageId === 'bookings') {
                     renderBookingsList();
                 } else if (pageId === 'reports') {
@@ -845,7 +947,7 @@
             });
         });
         
-        // Calendário
+        // Calendário (código existente permanece igual)
         function renderCalendar() {
             const year = currentDate.getFullYear();
             const month = currentDate.getMonth();
@@ -1297,7 +1399,7 @@
             }
         });
         
-        // Formulário de cliente
+        // NOVO: Formulário de cliente ATUALIZADO
         clientTypeSelect.addEventListener('change', () => {
             documentLabel.textContent = clientTypeSelect.value.toUpperCase();
         });
@@ -1309,11 +1411,13 @@
             const document = document.getElementById('client-document').value;
             const artisticName = document.getElementById('client-name').value;
             const phone = document.getElementById('client-phone').value;
+            const email = document.getElementById('client-email').value;
+            const notes = document.getElementById('client-notes').value;
             const clientId = clientIdInput.value;
             
             // Validações básicas
             if (!document || !artisticName || !phone) {
-                showClientAlert('Por favor, preencha todos os campos.', 'error');
+                showClientAlert('Por favor, preencha todos os campos obrigatórios.', 'error');
                 return;
             }
             
@@ -1336,8 +1440,13 @@
                         type,
                         document,
                         artisticName,
-                        phone
+                        phone,
+                        email,
+                        notes,
+                        updatedAt: new Date().toISOString()
                     };
+                    
+                    showClientAlert('Cliente atualizado com sucesso!', 'success');
                 }
             } else {
                 // Cria um novo cliente
@@ -1347,21 +1456,27 @@
                     document,
                     artisticName,
                     phone,
-                    createdAt: new Date().toISOString()
+                    email,
+                    notes,
+                    totalHours: 0,
+                    totalSessions: 0,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
                 };
                 
                 clients.push(client);
+                showClientAlert('Cliente cadastrado com sucesso!', 'success');
             }
             
             saveClients();
             
-            showClientAlert(
-                clientId ? 'Cliente atualizado com sucesso!' : 'Cliente cadastrado com sucesso!', 
-                'success'
-            );
+            // Limpa o formulário automaticamente após cadastro bem-sucedido
+            if (!clientId) {
+                resetClientForm();
+            }
             
-            resetClientForm();
             renderClientsList();
+            updateClientStats();
         });
         
         clientCancelBtn.addEventListener('click', resetClientForm);
@@ -1372,6 +1487,9 @@
             clientSubmitBtn.textContent = 'Cadastrar Cliente';
             clientCancelBtn.style.display = 'none';
             editingClientId = null;
+            
+            // Foca no primeiro campo para facilitar novo cadastro
+            document.getElementById('client-document').focus();
         }
         
         function showClientAlert(message, type) {
@@ -1385,7 +1503,7 @@
             }, 5000);
         }
         
-        // Lista de clientes
+        // NOVO: Lista de clientes ATUALIZADA com ordenação
         function renderClientsList() {
             clientsList.innerHTML = '';
             
@@ -1394,7 +1512,39 @@
                 return;
             }
             
-            clients.forEach(client => {
+            // Calcula estatísticas para cada cliente
+            const clientsWithStats = clients.map(client => {
+                const clientBookings = bookings.filter(booking => booking.clientId === client.id);
+                const totalHours = clientBookings.reduce((sum, booking) => sum + booking.duration, 0);
+                const totalSessions = clientBookings.length;
+                
+                return {
+                    ...client,
+                    totalHours,
+                    totalSessions,
+                    lastBooking: clientBookings.length > 0 ? 
+                        Math.max(...clientBookings.map(b => new Date(b.date).getTime())) : 0
+                };
+            });
+            
+            // Aplica ordenação
+            clientsWithStats.sort((a, b) => {
+                const multiplier = clientSort.direction === 'asc' ? 1 : -1;
+                
+                if (clientSort.column === 'name') {
+                    return multiplier * a.artisticName.localeCompare(b.artisticName);
+                } else if (clientSort.column === 'hours') {
+                    return multiplier * (a.totalHours - b.totalHours);
+                } else if (clientSort.column === 'sessions') {
+                    return multiplier * (a.totalSessions - b.totalSessions);
+                } else if (clientSort.column === 'recent') {
+                    return multiplier * (a.lastBooking - b.lastBooking);
+                }
+                
+                return 0;
+            });
+            
+            clientsWithStats.forEach(client => {
                 const clientElement = document.createElement('div');
                 clientElement.classList.add('booking-item');
                 clientElement.innerHTML = `
@@ -1402,6 +1552,9 @@
                         <h3>${client.artisticName}</h3>
                         <p>${client.type.toUpperCase()}: ${client.document}</p>
                         <p>Telefone: ${client.phone}</p>
+                        ${client.email ? `<p>E-mail: ${client.email}</p>` : ''}
+                        <p><strong>Horas totais:</strong> ${client.totalHours}h | <strong>Sessões:</strong> ${client.totalSessions}</p>
+                        ${client.notes ? `<p><strong>Observações:</strong> ${client.notes}</p>` : ''}
                     </div>
                     <div class="booking-actions">
                         <button class="btn btn-warning" onclick="editClient('${client.id}')">Editar</button>
@@ -1412,6 +1565,69 @@
             });
         }
         
+        // NOVO: Ordenação de clientes
+        applyClientSortBtn.addEventListener('click', () => {
+            const sortValue = sortClientsSelect.value;
+            clientSort.column = sortValue;
+            renderClientsList();
+        });
+        
+        // NOVO: Estatísticas de clientes
+        function updateClientStats() {
+            const totalClients = clients.length;
+            
+            // Clientes com agendamentos
+            const clientsWithBookings = clients.filter(client => 
+                bookings.some(booking => booking.clientId === client.id)
+            );
+            
+            // Total de horas
+            const totalHours = bookings.reduce((sum, booking) => sum + booking.duration, 0);
+            
+            totalClientsElement.textContent = totalClients;
+            activeClientsElement.textContent = clientsWithBookings.length;
+            totalHoursElement.textContent = `${totalHours}h`;
+        }
+        
+        // NOVO: Exportar clientes
+        exportClientsBtn.addEventListener('click', () => {
+            const data = clients.map(client => {
+                const clientBookings = bookings.filter(booking => booking.clientId === client.id);
+                const totalHours = clientBookings.reduce((sum, booking) => sum + booking.duration, 0);
+                const totalSessions = clientBookings.length;
+                
+                return {
+                    'Nome Artístico': client.artisticName,
+                    'Documento': client.document,
+                    'Telefone': client.phone,
+                    'E-mail': client.email || '',
+                    'Horas Totais': totalHours,
+                    'Total de Sessões': totalSessions,
+                    'Observações': client.notes || ''
+                };
+            });
+            
+            // Cria CSV
+            const headers = Object.keys(data[0]);
+            const csv = [
+                headers.join(','),
+                ...data.map(row => headers.map(header => `"${row[header]}"`).join(','))
+            ].join('\n');
+            
+            // Download
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `clientes_catarse_studio_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            alert('Lista de clientes exportada com sucesso!');
+        });
+        
         function editClient(clientId) {
             const client = clients.find(c => c.id === clientId);
             if (client) {
@@ -1421,6 +1637,8 @@
                 document.getElementById('client-document').value = client.document;
                 document.getElementById('client-name').value = client.artisticName;
                 document.getElementById('client-phone').value = client.phone;
+                document.getElementById('client-email').value = client.email || '';
+                document.getElementById('client-notes').value = client.notes || '';
                 
                 clientSubmitBtn.textContent = 'Atualizar Cliente';
                 clientCancelBtn.style.display = 'inline-block';
@@ -1447,6 +1665,7 @@
                 clients = clients.filter(client => client.id !== clientId);
                 saveClients();
                 renderClientsList();
+                updateClientStats();
                 alert('Cliente excluído com sucesso!');
             }
         }
@@ -1617,6 +1836,7 @@
         renderCalendar();
         renderClientsList();
         renderBookingsList();
+        updateClientStats();
         
         // Define as datas padrão para o relatório
         const today = new Date();
@@ -1630,5 +1850,3 @@
     </script>
 </body>
 </html>
-
-
