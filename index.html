@@ -1401,7 +1401,7 @@
             }
         });
         
-        // Formulário de cliente ATUALIZADO
+        // Formulário de cliente ATUALIZADO - CORREÇÃO APLICADA AQUI
         clientTypeSelect.addEventListener('change', () => {
             documentLabel.textContent = clientTypeSelect.value.toUpperCase();
         });
@@ -1410,7 +1410,7 @@
             e.preventDefault();
             
             const type = clientTypeSelect.value;
-            const document = document.getElementById('client-document').value;
+            const clientDocument = document.getElementById('client-document').value; // Mudei o nome da variável
             const artisticName = document.getElementById('client-name').value;
             const phone = document.getElementById('client-phone').value;
             const email = document.getElementById('client-email').value;
@@ -1418,14 +1418,14 @@
             const clientId = clientIdInput.value;
             
             // Validações básicas
-            if (!document || !artisticName || !phone) {
+            if (!clientDocument || !artisticName || !phone) {
                 showClientAlert('Por favor, preencha todos os campos obrigatórios.', 'error');
                 return;
             }
             
             // Verifica se o cliente já existe (exceto para o cliente atual em edição)
             const existingClient = clients.find(client => 
-                client.document === document && client.id !== clientId
+                client.document === clientDocument && client.id !== clientId
             );
             
             if (existingClient) {
@@ -1440,7 +1440,7 @@
                     clients[clientIndex] = {
                         ...clients[clientIndex],
                         type,
-                        document,
+                        document: clientDocument, // Usei o novo nome da variável
                         artisticName,
                         phone,
                         email,
@@ -1455,7 +1455,7 @@
                 const client = {
                     id: Date.now().toString(),
                     type,
-                    document,
+                    document: clientDocument, // Usei o novo nome da variável
                     artisticName,
                     phone,
                     email,
