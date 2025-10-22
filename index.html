@@ -810,8 +810,9 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="booking-duration">Duração (mínimo 2 horas)</label>
+                    <label for="booking-duration">Duração</label>
                     <select id="booking-duration" required>
+                        <option value="1">1 hora</option>
                         <option value="2">2 horas</option>
                         <option value="3">3 horas</option>
                         <option value="4">4 horas</option>
@@ -1100,7 +1101,7 @@
                 // Verifica se o horário está ocupado
                 const isBooked = bookings.some(booking => 
                     booking.date === date && 
-                    parseInt(booking.startTime.split(':')[0]) === hour
+                    isTimeSlotBooked(booking, hour)
                 );
                 
                 if (isBooked) {
@@ -1113,6 +1114,15 @@
                 
                 timeSlots.appendChild(timeSlot);
             }
+        }
+        
+        // NOVA FUNÇÃO: Verifica se um horário está ocupado considerando a duração dos agendamentos
+        function isTimeSlotBooked(booking, hour) {
+            const bookingStartHour = parseInt(booking.startTime.split(':')[0]);
+            const bookingEndHour = bookingStartHour + booking.duration;
+            
+            // Verifica se o horário está dentro do intervalo do agendamento
+            return hour >= bookingStartHour && hour < bookingEndHour;
         }
         
         // Navegação do calendário
@@ -1158,7 +1168,7 @@
                 // Verifica se o horário está disponível (exceto para o agendamento atual em edição)
                 const isBooked = bookings.some(booking => 
                     booking.date === date && 
-                    parseInt(booking.startTime.split(':')[0]) === hour &&
+                    isTimeSlotBooked(booking, hour) &&
                     booking.id !== bookingId
                 );
                 
@@ -1227,11 +1237,19 @@
             }
             
             // Verifica se o horário ainda está disponível (exceto para o agendamento atual em edição)
-            const isBooked = bookings.some(booking => 
-                booking.date === date && 
-                booking.startTime === startTime &&
-                booking.id !== bookingId
-            );
+            const startHour = parseInt(startTime.split(':')[0]);
+            let isBooked = false;
+            
+            for (let hour = startHour; hour < startHour + duration; hour++) {
+                if (bookings.some(booking => 
+                    booking.date === date && 
+                    isTimeSlotBooked(booking, hour) &&
+                    booking.id !== bookingId
+                )) {
+                    isBooked = true;
+                    break;
+                }
+            }
             
             if (isBooked) {
                 alert('Este horário já foi reservado. Por favor, selecione outro.');
