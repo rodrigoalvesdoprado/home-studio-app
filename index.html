@@ -674,9 +674,16 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="client-document" id="document-label">CPF</label>
+                        <label for="client-document">CPF ou CNPJ</label>
                         <input type="text" id="client-document" required>
+                        <small id="document-error" style="color: var(--error-color); display: none;">Número inválido</small>
                     </div>
+                </div>
+                
+                <!-- NOVO CAMPO: Nome -->
+                <div class="form-group">
+                    <label for="client-fullname">Nome Completo</label>
+                    <input type="text" id="client-fullname" required>
                 </div>
                 
                 <div class="form-group">
@@ -887,7 +894,6 @@
         const bookingForm = document.getElementById('booking-form');
         const clientForm = document.getElementById('client-form');
         const clientTypeSelect = document.getElementById('client-type');
-        const documentLabel = document.getElementById('document-label');
         const clientsList = document.getElementById('clients-list');
         const bookingsList = document.getElementById('bookings-list');
         const bookingClientSelect = document.getElementById('booking-client');
@@ -921,6 +927,170 @@
         let editingBookingId = null;
         let currentSort = { column: 'hours', direction: 'desc' };
         let clientSort = { column: 'name', direction: 'asc' };
+        
+        // FUNÇÕES PARA VALIDAÇÃO E FORMATAÇÃO DE DOCUMENTOS
+        function formatCPF(cpf) {
+            cpf = cpf.replace(/\D/g, '');
+            return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+        }
+
+        function formatCNPJ(cnpj) {
+            cnpj = cnpj.replace(/\D/g, '');
+            return cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
+        }
+
+        function formatPhone(phone) {
+            phone = phone.replace(/\D/g, '');
+            if (phone.length === 11) {
+                return phone.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+            }
+            return phone.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+        }
+
+        function validateCPF(cpf) {
+            cpf = cpf.replace(/\D/g, '');
+            
+            if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) {
+                return false;
+            }
+            
+            let sum = 0;
+            let remainder;
+            
+            for (let i = 1; i <= 9; i++) {
+                sum += parseInt(cpf.substring(i-1, i)) * (11 - i);
+            }
+            
+            remainder = (sum * 10) % 11;
+            if (remainder === 10 || remainder === 11) remainder = 0;
+            if (remainder !== parseInt(cpf.substring(9, 10))) return false;
+            
+            sum = 0;
+            for (let i = 1; i <= 10; i++) {
+                sum += parseInt(cpf.substring(i-1, i)) * (12 - i);
+            }
+            
+            remainder = (sum * 10) % 11;
+            if (remainder === 10 || remainder === 11) remainder = 0;
+            if (remainder !== parseInt(cpf.substring(10, 11))) return false;
+            
+            return true;
+        }
+
+        function validateCNPJ(cnpj) {
+            cnpj = cnpj.replace(/\D/g, '');
+            
+            if (cnpj.length !== 14 || /^(\d)\1+$/.test(cnpj)) {
+                return false;
+            }
+            
+            let size = cnpj.length - 2;
+            let numbers = cnpj.substring(0, size);
+            let digits = cnpj.substring(size);
+            let sum = 0;
+            let pos = size - 7;
+            
+            for (let i = size; i >= 1; i--) {
+                sum += numbers.charAt(size - i) * pos--;
+                if (pos < 2) pos = 9;
+            }
+            
+            let result = sum % 11 < 2 ? 0 : 11 - sum % 11;
+            if (result !== parseInt(digits.charAt(0))) return false;
+            
+            size = size + 1;
+            numbers = cnpj.substring(0, size);
+            sum = 0;
+            pos = size - 7;
+            
+            for (let i = size; i >= 1; i--) {
+                sum += numbers.charAt(size - i) * pos--;
+                if (pos < 2) pos = 9;
+            }
+            
+            result = sum % 11 < 2 ? 0 : 11 - sum % 11;
+            if (result !== parseInt(digits.charAt(1))) return false;
+            
+            return true;
+        }
+
+        // APLICA MÁSCARA NO CAMPO DE DOCUMENTO
+        document.getElementById('client-document').addEventListener('input', function(e) {
+            const type = document.getElementById('client-type').value;
+            let value = e.target.value.replace(/\D/g, '');
+            
+            if (type === 'cpf') {
+                if (value.length <= 11) {
+                    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                    value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                }
+            } else {
+                if (value.length <= 14) {
+                    value = value.replace(/(\d{2})(\d)/, '$1.$2');
+                    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                    value = value.replace(/(\d{3})(\d)/, '$1/$2');
+                    value = value.replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+                }
+            }
+            
+            e.target.value = value;
+            
+            // Valida o documento
+            validateDocument();
+        });
+
+        // APLICA MÁSCARA NO CAMPO DE TELEFONE
+        document.getElementById('client-phone').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            
+            if (value.length <= 11) {
+                if (value.length <= 10) {
+                    value = value.replace(/(\d{2})(\d)/, '($1) $2');
+                    value = value.replace(/(\d{4})(\d)/, '$1-$2');
+                } else {
+                    value = value.replace(/(\d{2})(\d)/, '($1) $2');
+                    value = value.replace(/(\d{5})(\d)/, '$1-$2');
+                }
+            }
+            
+            e.target.value = value;
+        });
+
+        // VALIDA O DOCUMENTO DIGITADO
+        function validateDocument() {
+            const documentInput = document.getElementById('client-document');
+            const errorElement = document.getElementById('document-error');
+            const type = document.getElementById('client-type').value;
+            const documentValue = documentInput.value.replace(/\D/g, '');
+            
+            let isValid = false;
+            
+            if (type === 'cpf') {
+                isValid = documentValue.length === 11 && validateCPF(documentValue);
+            } else {
+                isValid = documentValue.length === 14 && validateCNPJ(documentValue);
+            }
+            
+            if (documentValue.length > 0 && !isValid) {
+                errorElement.style.display = 'block';
+                documentInput.style.borderColor = 'var(--error-color)';
+            } else {
+                errorElement.style.display = 'none';
+                documentInput.style.borderColor = 'var(--border-color)';
+            }
+            
+            return isValid;
+        }
+
+        // ATUALIZA A MÁSCARA QUANDO O TIPO MUDA
+        clientTypeSelect.addEventListener('change', function() {
+            const documentInput = document.getElementById('client-document');
+            documentInput.value = '';
+            documentInput.placeholder = this.value === 'cpf' ? '000.000.000-00' : '00.000.000/0000-00';
+            document.getElementById('document-error').style.display = 'none';
+            documentInput.style.borderColor = 'var(--border-color)';
+        });
         
         // Navegação entre páginas
         navLinks.forEach(link => {
@@ -1422,16 +1592,13 @@
             }
         });
         
-        // Formulário de cliente ATUALIZADO - CORREÇÃO APLICADA AQUI
-        clientTypeSelect.addEventListener('change', () => {
-            documentLabel.textContent = clientTypeSelect.value.toUpperCase();
-        });
-        
+        // Formulário de cliente ATUALIZADO
         clientForm.addEventListener('submit', (e) => {
             e.preventDefault();
             
             const type = clientTypeSelect.value;
-            const clientDocument = document.getElementById('client-document').value; // Mudei o nome da variável
+            const clientDocument = document.getElementById('client-document').value;
+            const fullName = document.getElementById('client-fullname').value;
             const artisticName = document.getElementById('client-name').value;
             const phone = document.getElementById('client-phone').value;
             const email = document.getElementById('client-email').value;
@@ -1439,8 +1606,14 @@
             const clientId = clientIdInput.value;
             
             // Validações básicas
-            if (!clientDocument || !artisticName || !phone) {
+            if (!clientDocument || !fullName || !artisticName || !phone) {
                 showClientAlert('Por favor, preencha todos os campos obrigatórios.', 'error');
+                return;
+            }
+            
+            // Valida o documento
+            if (!validateDocument()) {
+                showClientAlert('Por favor, digite um documento válido.', 'error');
                 return;
             }
             
@@ -1461,7 +1634,8 @@
                     clients[clientIndex] = {
                         ...clients[clientIndex],
                         type,
-                        document: clientDocument, // Usei o novo nome da variável
+                        document: clientDocument,
+                        fullName,
                         artisticName,
                         phone,
                         email,
@@ -1476,7 +1650,8 @@
                 const client = {
                     id: Date.now().toString(),
                     type,
-                    document: clientDocument, // Usei o novo nome da variável
+                    document: clientDocument,
+                    fullName,
                     artisticName,
                     phone,
                     email,
@@ -1510,6 +1685,8 @@
             clientSubmitBtn.textContent = 'Cadastrar Cliente';
             clientCancelBtn.style.display = 'none';
             editingClientId = null;
+            document.getElementById('document-error').style.display = 'none';
+            document.getElementById('client-document').style.borderColor = 'var(--border-color)';
             
             // Foca no primeiro campo para facilitar novo cadastro
             document.getElementById('client-document').focus();
@@ -1577,6 +1754,7 @@
                 clientElement.innerHTML = `
                     <div class="booking-info">
                         <h3>${client.artisticName}</h3>
+                        <p><strong>Nome Completo:</strong> ${client.fullName}</p>
                         <p>${client.type.toUpperCase()}: ${client.document}</p>
                         <p>Telefone: <a href="${whatsappLink}" target="_blank" class="whatsapp-link">${client.phone}</a></p>
                         ${client.email ? `<p>E-mail: ${client.email}</p>` : ''}
@@ -1630,6 +1808,7 @@
                 
                 return {
                     'Nome Artístico': client.artisticName,
+                    'Nome Completo': client.fullName,
                     'Documento': client.document,
                     'Telefone': client.phone,
                     'E-mail': client.email || '',
@@ -1665,8 +1844,8 @@
             if (client) {
                 clientIdInput.value = client.id;
                 clientTypeSelect.value = client.type;
-                documentLabel.textContent = client.type.toUpperCase();
                 document.getElementById('client-document').value = client.document;
+                document.getElementById('client-fullname').value = client.fullName;
                 document.getElementById('client-name').value = client.artisticName;
                 document.getElementById('client-phone').value = client.phone;
                 document.getElementById('client-email').value = client.email || '';
