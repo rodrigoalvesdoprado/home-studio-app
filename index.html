@@ -15,6 +15,7 @@
             --success-color: #2e7d32;
             --warning-color: #f57c00;
             --error-color: #c62828;
+            --info-color: #1976d2;
         }
         
         * {
@@ -192,6 +193,10 @@
         
         .btn-error {
             background-color: var(--error-color);
+        }
+        
+        .btn-info {
+            background-color: var(--info-color);
         }
         
         .calendar {
@@ -392,6 +397,10 @@
             background-color: var(--error-color);
         }
         
+        .alert-info {
+            background-color: var(--info-color);
+        }
+        
         .report-controls {
             display: flex;
             flex-direction: column;
@@ -513,6 +522,88 @@
             font-size: 14px;
             color: #aaa;
         }
+
+        /* ESTILOS PARA O LOG DE AUDITORIA */
+        .log-filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .log-filters select, .log-filters input, .log-filters button {
+            width: auto;
+            min-width: 150px;
+        }
+
+        .log-entry {
+            background-color: var(--secondary-color);
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            border-left: 4px solid var(--border-color);
+        }
+
+        .log-entry.create {
+            border-left-color: var(--success-color);
+        }
+
+        .log-entry.update {
+            border-left-color: var(--warning-color);
+        }
+
+        .log-entry.delete {
+            border-left-color: var(--error-color);
+        }
+
+        .log-entry.activity {
+            border-left-color: var(--info-color);
+        }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .log-action {
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .log-action.create {
+            background-color: var(--success-color);
+        }
+
+        .log-action.update {
+            background-color: var(--warning-color);
+        }
+
+        .log-action.delete {
+            background-color: var(--error-color);
+        }
+
+        .log-action.activity {
+            background-color: var(--info-color);
+        }
+
+        .log-timestamp {
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        .log-details {
+            font-size: 14px;
+            color: #ddd;
+        }
+
+        .log-entity {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
         
         /* Desktop */
         @media (min-width: 768px) {
@@ -579,6 +670,10 @@
             .clients-controls {
                 flex-direction: row;
             }
+
+            .log-filters {
+                flex-direction: row;
+            }
         }
 
         @media (max-width: 767px) {
@@ -587,6 +682,14 @@
             }
 
             .clients-controls select, .clients-controls button {
+                width: 100%;
+            }
+
+            .log-filters {
+                flex-direction: column;
+            }
+
+            .log-filters select, .log-filters input, .log-filters button {
                 width: 100%;
             }
         }
@@ -609,6 +712,7 @@
                             <a href="#" class="nav-link" data-page="clients">Clientes</a>
                             <a href="#" class="nav-link" data-page="bookings">Agendamentos</a>
                             <a href="#" class="nav-link" data-page="reports">Relatórios</a>
+                            <a href="#" class="nav-link" data-page="audit">Log do Sistema</a>
                         </div>
                         
                         <!-- Menu Mobile -->
@@ -621,6 +725,7 @@
                                 <a href="#" class="nav-link" data-page="clients">Clientes</a>
                                 <a href="#" class="nav-link" data-page="bookings">Agendamentos</a>
                                 <a href="#" class="nav-link" data-page="reports">Relatórios</a>
+                                <a href="#" class="nav-link" data-page="audit">Log do Sistema</a>
                             </div>
                         </div>
                     </div>
@@ -656,7 +761,7 @@
             </div>
         </section>
         
-        <!-- Página de Clientes - ATUALIZADA -->
+        <!-- Página de Clientes -->
         <section id="clients" class="page">
             <h2>Cadastro de Clientes</h2>
             
@@ -680,7 +785,6 @@
                     </div>
                 </div>
                 
-                <!-- NOVO CAMPO: Nome -->
                 <div class="form-group">
                     <label for="client-fullname">Nome Completo</label>
                     <input type="text" id="client-fullname" required>
@@ -788,6 +892,74 @@
                 </table>
             </div>
         </section>
+
+        <!-- NOVA PÁGINA: Log do Sistema -->
+        <section id="audit" class="page">
+            <h2>Log do Sistema - Histórico de Alterações</h2>
+            
+            <div class="alert alert-info">
+                <strong>Auditoria Completa:</strong> Todas as ações importantes do sistema são registradas aqui.
+            </div>
+
+            <!-- Filtros do Log -->
+            <div class="log-filters">
+                <div class="form-group">
+                    <label for="log-entity">Filtrar por Entidade:</label>
+                    <select id="log-entity">
+                        <option value="all">Todas as Entidades</option>
+                        <option value="client">Clientes</option>
+                        <option value="booking">Agendamentos</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="log-action">Filtrar por Ação:</label>
+                    <select id="log-action">
+                        <option value="all">Todas as Ações</option>
+                        <option value="create">Criações</option>
+                        <option value="update">Atualizações</option>
+                        <option value="delete">Exclusões</option>
+                        <option value="activity">Atividades</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="log-date">Data:</label>
+                    <input type="date" id="log-date">
+                </div>
+                <button class="btn btn-secondary" id="apply-log-filters">
+                    Aplicar Filtros
+                </button>
+                <button class="btn btn-info" id="clear-log-filters">
+                    Limpar Filtros
+                </button>
+                <button class="btn btn-error" id="clear-all-logs">
+                    Limpar Todo Log
+                </button>
+            </div>
+
+            <!-- Estatísticas do Log -->
+            <div class="client-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-logs">0</div>
+                    <div class="stat-label">Total de Registros</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="today-logs">0</div>
+                    <div class="stat-label">Registros Hoje</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="client-logs">0</div>
+                    <div class="stat-label">Ações em Clientes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="booking-logs">0</div>
+                    <div class="stat-label">Ações em Agendamentos</div>
+                </div>
+            </div>
+            
+            <div class="bookings-list" id="audit-log-list">
+                <!-- Lista de logs será gerada via JavaScript -->
+            </div>
+        </section>
     </div>
     
     <!-- Modais -->
@@ -858,7 +1030,7 @@
     </div>
 
     <script>
-        // Código JavaScript ATUALIZADO com as novas funcionalidades
+        // Código JavaScript ATUALIZADO com sistema de log completo
         
         // Menu mobile toggle
         document.querySelector('.mobile-menu-btn').addEventListener('click', function() {
@@ -876,6 +1048,9 @@
         // Dados persistentes usando localStorage
         let clients = JSON.parse(localStorage.getItem('studio_clients')) || [];
         let bookings = JSON.parse(localStorage.getItem('studio_bookings')) || [];
+        
+        // NOVO: Sistema de Log de Auditoria
+        let auditLog = JSON.parse(localStorage.getItem('studio_audit_log')) || [];
         
         // Elementos da interface
         const pages = document.querySelectorAll('.page');
@@ -910,7 +1085,7 @@
         const deleteBookingBtn = document.getElementById('delete-booking-btn');
         const bookingDetailsContent = document.getElementById('booking-details-content');
         
-        // NOVOS ELEMENTOS PARA CLIENTES
+        // Elementos para clientes
         const sortClientsSelect = document.getElementById('sort-clients');
         const applyClientSortBtn = document.getElementById('apply-client-sort');
         const exportClientsBtn = document.getElementById('export-clients');
@@ -918,6 +1093,19 @@
         const totalClientsElement = document.getElementById('total-clients');
         const activeClientsElement = document.getElementById('active-clients');
         const totalHoursElement = document.getElementById('total-hours');
+        
+        // NOVOS ELEMENTOS PARA O SISTEMA DE LOG
+        const auditLogList = document.getElementById('audit-log-list');
+        const logEntityFilter = document.getElementById('log-entity');
+        const logActionFilter = document.getElementById('log-action');
+        const logDateFilter = document.getElementById('log-date');
+        const applyLogFiltersBtn = document.getElementById('apply-log-filters');
+        const clearLogFiltersBtn = document.getElementById('clear-log-filters');
+        const clearAllLogsBtn = document.getElementById('clear-all-logs');
+        const totalLogsElement = document.getElementById('total-logs');
+        const todayLogsElement = document.getElementById('today-logs');
+        const clientLogsElement = document.getElementById('client-logs');
+        const bookingLogsElement = document.getElementById('booking-logs');
         
         // Estado da aplicação
         let currentDate = new Date();
@@ -927,6 +1115,179 @@
         let editingBookingId = null;
         let currentSort = { column: 'hours', direction: 'desc' };
         let clientSort = { column: 'name', direction: 'asc' };
+        
+        // NOVO: Filtros atuais do log
+        let currentLogFilters = {
+            entity: 'all',
+            action: 'all',
+            date: ''
+        };
+        
+        // FUNÇÕES PARA O SISTEMA DE LOG DE AUDITORIA
+        
+        /**
+         * Registra uma ação no log do sistema
+         * @param {string} action - Tipo de ação (create, update, delete, activity)
+         * @param {string} entity - Entidade afetada (client, booking)
+         * @param {string} entityId - ID da entidade
+         * @param {object} details - Detalhes da ação
+         */
+        function logAction(action, entity, entityId, details = {}) {
+            const logEntry = {
+                id: Date.now().toString(),
+                timestamp: new Date().toISOString(),
+                action,
+                entity,
+                entityId,
+                details,
+                user: 'system' // Em um sistema com usuários, seria o ID do usuário
+            };
+            
+            // Adiciona no início do array (mais recentes primeiro)
+            auditLog.unshift(logEntry);
+            
+            // Limita o log aos 1000 registros mais recentes para não ocupar muito espaço
+            if (auditLog.length > 1000) {
+                auditLog = auditLog.slice(0, 1000);
+            }
+            
+            // Salva no localStorage
+            localStorage.setItem('studio_audit_log', JSON.stringify(auditLog));
+            
+            // Atualiza a interface se estiver na página de log
+            if (document.getElementById('audit').classList.contains('active')) {
+                renderAuditLog();
+                updateLogStats();
+            }
+        }
+        
+        /**
+         * Renderiza a lista de logs de auditoria
+         */
+        function renderAuditLog() {
+            auditLogList.innerHTML = '';
+            
+            if (auditLog.length === 0) {
+                auditLogList.innerHTML = '<div class="log-entry"><div class="log-details">Nenhum registro de log encontrado.</div></div>';
+                return;
+            }
+            
+            // Aplica filtros
+            let filteredLogs = auditLog.filter(log => {
+                // Filtro por entidade
+                if (currentLogFilters.entity !== 'all' && log.entity !== currentLogFilters.entity) {
+                    return false;
+                }
+                
+                // Filtro por ação
+                if (currentLogFilters.action !== 'all' && log.action !== currentLogFilters.action) {
+                    return false;
+                }
+                
+                // Filtro por data
+                if (currentLogFilters.date) {
+                    const logDate = new Date(log.timestamp).toISOString().split('T')[0];
+                    if (logDate !== currentLogFilters.date) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            });
+            
+            if (filteredLogs.length === 0) {
+                auditLogList.innerHTML = '<div class="log-entry"><div class="log-details">Nenhum registro encontrado com os filtros atuais.</div></div>';
+                return;
+            }
+            
+            filteredLogs.forEach(log => {
+                const logElement = document.createElement('div');
+                logElement.classList.add('log-entry', log.action);
+                
+                const timestamp = new Date(log.timestamp);
+                const formattedTime = timestamp.toLocaleString('pt-BR');
+                
+                // Textos amigáveis para ações e entidades
+                const actionTexts = {
+                    'create': 'Criado',
+                    'update': 'Atualizado',
+                    'delete': 'Excluído',
+                    'activity': 'Atividade'
+                };
+                
+                const entityTexts = {
+                    'client': 'Cliente',
+                    'booking': 'Agendamento'
+                };
+                
+                // Detalhes específicos por tipo de ação
+                let detailsText = '';
+                if (log.action === 'create' || log.action === 'update') {
+                    if (log.entity === 'client') {
+                        detailsText = `Nome: ${log.details.artisticName || log.details.name || 'N/A'}`;
+                        if (log.details.document) {
+                            detailsText += ` | Documento: ${log.details.document}`;
+                        }
+                    } else if (log.entity === 'booking') {
+                        detailsText = `Cliente: ${log.details.clientName || 'N/A'}`;
+                        if (log.details.date && log.details.startTime) {
+                            detailsText += ` | Data: ${log.details.date} ${log.details.startTime}`;
+                        }
+                    }
+                } else if (log.action === 'delete') {
+                    detailsText = `ID: ${log.entityId}`;
+                    if (log.details.name) {
+                        detailsText += ` | Nome: ${log.details.name}`;
+                    }
+                } else if (log.action === 'activity') {
+                    detailsText = log.details.description || 'Atividade registrada';
+                }
+                
+                logElement.innerHTML = `
+                    <div class="log-header">
+                        <span class="log-action ${log.action}">${actionTexts[log.action]} ${entityTexts[log.entity]}</span>
+                        <span class="log-timestamp">${formattedTime}</span>
+                    </div>
+                    <div class="log-details">
+                        ${detailsText}
+                    </div>
+                `;
+                
+                auditLogList.appendChild(logElement);
+            });
+        }
+        
+        /**
+         * Atualiza as estatísticas do log
+         */
+        function updateLogStats() {
+            const today = new Date().toISOString().split('T')[0];
+            
+            const totalLogs = auditLog.length;
+            const todayLogs = auditLog.filter(log => 
+                new Date(log.timestamp).toISOString().split('T')[0] === today
+            ).length;
+            const clientLogs = auditLog.filter(log => log.entity === 'client').length;
+            const bookingLogs = auditLog.filter(log => log.entity === 'booking').length;
+            
+            totalLogsElement.textContent = totalLogs;
+            todayLogsElement.textContent = todayLogs;
+            clientLogsElement.textContent = clientLogs;
+            bookingLogsElement.textContent = bookingLogs;
+        }
+        
+        /**
+         * Limpa todos os logs do sistema
+         */
+        function clearAllLogs() {
+            if (confirm('Tem certeza que deseja limpar todo o histórico de logs? Esta ação não pode ser desfeita.')) {
+                auditLog = [];
+                localStorage.setItem('studio_audit_log', JSON.stringify(auditLog));
+                renderAuditLog();
+                updateLogStats();
+                alert('Todos os logs foram limpos com sucesso!');
+            }
+        }
         
         // FUNÇÕES PARA VALIDAÇÃO E FORMATAÇÃO DE DOCUMENTOS
         function formatCPF(cpf) {
@@ -1114,6 +1475,9 @@
                     renderBookingsList();
                 } else if (pageId === 'reports') {
                     generateReport();
+                } else if (pageId === 'audit') {
+                    renderAuditLog();
+                    updateLogStats();
                 }
             });
         });
@@ -1288,7 +1652,7 @@
             }
         }
         
-        // NOVA FUNÇÃO: Verifica se um horário está ocupado considerando a duração dos agendamentos
+        // Verifica se um horário está ocupado considerando a duração dos agendamentos
         function isTimeSlotBooked(booking, hour) {
             const bookingStartHour = parseInt(booking.startTime.split(':')[0]);
             const bookingEndHour = bookingStartHour + booking.duration;
@@ -1439,8 +1803,9 @@
                 // Atualiza o agendamento existente
                 const bookingIndex = bookings.findIndex(b => b.id === bookingId);
                 if (bookingIndex !== -1) {
+                    const oldBooking = bookings[bookingIndex];
                     bookings[bookingIndex] = {
-                        ...bookings[bookingIndex],
+                        ...oldBooking,
                         date,
                         startTime,
                         duration,
@@ -1448,8 +1813,20 @@
                         clientName: client.artisticName,
                         clientDocument: client.document,
                         clientPhone: client.phone,
-                        notes
+                        notes,
+                        updatedAt: new Date().toISOString()
                     };
+                    
+                    // LOG: Registra a atualização do agendamento
+                    logAction('update', 'booking', bookingId, {
+                        clientName: client.artisticName,
+                        date: date,
+                        startTime: startTime,
+                        duration: duration,
+                        oldDate: oldBooking.date,
+                        oldStartTime: oldBooking.startTime,
+                        oldDuration: oldBooking.duration
+                    });
                 }
             } else {
                 // Cria um novo agendamento
@@ -1463,11 +1840,20 @@
                     clientDocument: client.document,
                     clientPhone: client.phone,
                     notes,
-                    activitiesCompleted: '', // Campo para atividades realizadas
-                    createdAt: new Date().toISOString()
+                    activitiesCompleted: '',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
                 };
                 
                 bookings.push(booking);
+                
+                // LOG: Registra a criação do agendamento
+                logAction('create', 'booking', booking.id, {
+                    clientName: client.artisticName,
+                    date: date,
+                    startTime: startTime,
+                    duration: duration
+                });
             }
             
             saveBookings();
@@ -1559,7 +1945,16 @@
             
             if (bookingIndex !== -1) {
                 bookings[bookingIndex].activitiesCompleted = activities;
+                bookings[bookingIndex].updatedAt = new Date().toISOString();
                 saveBookings();
+                
+                // LOG: Registra a atualização das atividades
+                logAction('activity', 'booking', bookingId, {
+                    clientName: bookings[bookingIndex].clientName,
+                    description: 'Atividades realizadas atualizadas',
+                    date: bookings[bookingIndex].date
+                });
+                
                 alert('Atividades realizadas salvas com sucesso!');
             }
         }
@@ -1576,8 +1971,17 @@
         
         deleteBookingBtn.addEventListener('click', () => {
             if (selectedBookingId && confirm('Tem certeza que deseja excluir este agendamento?')) {
+                const booking = bookings.find(b => b.id === selectedBookingId);
                 bookings = bookings.filter(booking => booking.id !== selectedBookingId);
                 saveBookings();
+                
+                // LOG: Registra a exclusão do agendamento
+                logAction('delete', 'booking', selectedBookingId, {
+                    clientName: booking.clientName,
+                    date: booking.date,
+                    startTime: booking.startTime
+                });
+                
                 bookingDetailsModal.classList.remove('active');
                 
                 // Atualiza as visualizações
@@ -1592,7 +1996,7 @@
             }
         });
         
-        // Formulário de cliente ATUALIZADO
+        // Formulário de cliente
         clientForm.addEventListener('submit', (e) => {
             e.preventDefault();
             
@@ -1631,8 +2035,9 @@
                 // Atualiza o cliente existente
                 const clientIndex = clients.findIndex(c => c.id === clientId);
                 if (clientIndex !== -1) {
+                    const oldClient = clients[clientIndex];
                     clients[clientIndex] = {
-                        ...clients[clientIndex],
+                        ...oldClient,
                         type,
                         document: clientDocument,
                         fullName,
@@ -1642,6 +2047,13 @@
                         notes,
                         updatedAt: new Date().toISOString()
                     };
+                    
+                    // LOG: Registra a atualização do cliente
+                    logAction('update', 'client', clientId, {
+                        artisticName: artisticName,
+                        document: clientDocument,
+                        oldName: oldClient.artisticName
+                    });
                     
                     showClientAlert('Cliente atualizado com sucesso!', 'success');
                 }
@@ -1663,6 +2075,13 @@
                 };
                 
                 clients.push(client);
+                
+                // LOG: Registra a criação do cliente
+                logAction('create', 'client', client.id, {
+                    artisticName: artisticName,
+                    document: clientDocument
+                });
+                
                 showClientAlert('Cliente cadastrado com sucesso!', 'success');
             }
             
@@ -1703,7 +2122,7 @@
             }, 5000);
         }
         
-        // Lista de clientes ATUALIZADA com ordenação E LINK DO WHATSAPP
+        // Lista de clientes com ordenação
         function renderClientsList() {
             clientsList.innerHTML = '';
             
@@ -1873,8 +2292,16 @@
                     return;
                 }
                 
+                const client = clients.find(c => c.id === clientId);
                 clients = clients.filter(client => client.id !== clientId);
                 saveClients();
+                
+                // LOG: Registra a exclusão do cliente
+                logAction('delete', 'client', clientId, {
+                    name: client.artisticName,
+                    document: client.document
+                });
+                
                 renderClientsList();
                 updateClientStats();
                 alert('Cliente excluído com sucesso!');
@@ -2028,6 +2455,24 @@
                 generateReport();
             });
         });
+        
+        // EVENT LISTENERS PARA O SISTEMA DE LOG
+        applyLogFiltersBtn.addEventListener('click', () => {
+            currentLogFilters.entity = logEntityFilter.value;
+            currentLogFilters.action = logActionFilter.value;
+            currentLogFilters.date = logDateFilter.value;
+            renderAuditLog();
+        });
+        
+        clearLogFiltersBtn.addEventListener('click', () => {
+            logEntityFilter.value = 'all';
+            logActionFilter.value = 'all';
+            logDateFilter.value = '';
+            currentLogFilters = { entity: 'all', action: 'all', date: '' };
+            renderAuditLog();
+        });
+        
+        clearAllLogsBtn.addEventListener('click', clearAllLogs);
         
         function calculateEndTime(startTime, duration) {
             const [hours, minutes] = startTime.split(':').map(Number);
