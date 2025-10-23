@@ -1073,12 +1073,14 @@
                 bookingElement.classList.add('booking-item');
                 
                 const endTime = calculateEndTime(booking.startTime, booking.duration);
+                const whatsappLink = `https://wa.me/55${booking.clientPhone.replace(/\D/g, '')}?text=Olá ${encodeURIComponent(booking.clientName)}! Vi que você tem um agendamento conosco.`;
                 
                 bookingElement.innerHTML = `
                     <div class="booking-info">
                         <h3>${booking.clientName}</h3>
                         <p>Horário: ${booking.startTime} - ${endTime} (${booking.duration}h)</p>
                         <p>Atividade: ${booking.notes || 'Nenhuma descrição fornecida'}</p>
+                        <p>Telefone: <a href="${whatsappLink}" target="_blank" class="whatsapp-link">${booking.clientPhone}</a></p>
                     </div>
                     <div class="booking-actions">
                         <button class="btn btn-secondary" onclick="viewBookingDetails('${booking.id}')">Ver Detalhes</button>
@@ -1336,6 +1338,7 @@
             const endTime = calculateEndTime(booking.startTime, booking.duration);
             const dateObj = new Date(booking.date);
             const formattedDate = dateObj.toLocaleDateString('pt-BR');
+            const whatsappLink = `https://wa.me/55${booking.clientPhone.replace(/\D/g, '')}?text=Olá ${encodeURIComponent(booking.clientName)}! Vi que você tem um agendamento conosco.`;
             
             bookingDetailsContent.innerHTML = `
                 <div class="agendamento-detalhes">
@@ -1352,7 +1355,7 @@
                         </div>
                         <div class="info-item">
                             <div class="info-label">Telefone:</div>
-                            <div>${booking.clientPhone}</div>
+                            <div><a href="${whatsappLink}" target="_blank" class="whatsapp-link">${booking.clientPhone}</a></div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">Data:</div>
@@ -1523,7 +1526,7 @@
             }, 5000);
         }
         
-        // Lista de clientes ATUALIZADA com ordenação
+        // Lista de clientes ATUALIZADA com ordenação E LINK DO WHATSAPP
         function renderClientsList() {
             clientsList.innerHTML = '';
             
@@ -1567,11 +1570,15 @@
             clientsWithStats.forEach(client => {
                 const clientElement = document.createElement('div');
                 clientElement.classList.add('booking-item');
+                
+                // Cria o link do WhatsApp
+                const whatsappLink = `https://wa.me/55${client.phone.replace(/\D/g, '')}?text=Olá ${encodeURIComponent(client.artisticName)}! Tudo bem?`;
+                
                 clientElement.innerHTML = `
                     <div class="booking-info">
                         <h3>${client.artisticName}</h3>
                         <p>${client.type.toUpperCase()}: ${client.document}</p>
-                        <p>Telefone: ${client.phone}</p>
+                        <p>Telefone: <a href="${whatsappLink}" target="_blank" class="whatsapp-link">${client.phone}</a></p>
                         ${client.email ? `<p>E-mail: ${client.email}</p>` : ''}
                         <p><strong>Horas totais:</strong> ${client.totalHours}h | <strong>Sessões:</strong> ${client.totalSessions}</p>
                         ${client.notes ? `<p><strong>Observações:</strong> ${client.notes}</p>` : ''}
@@ -1718,6 +1725,7 @@
                 const dateObj = new Date(booking.date);
                 const formattedDate = dateObj.toLocaleDateString('pt-BR');
                 const endTime = calculateEndTime(booking.startTime, booking.duration);
+                const whatsappLink = `https://wa.me/55${booking.clientPhone.replace(/\D/g, '')}?text=Olá ${encodeURIComponent(booking.clientName)}! Vi que você tem um agendamento conosco.`;
                 
                 bookingElement.innerHTML = `
                     <div class="booking-info">
@@ -1725,7 +1733,7 @@
                         <p>Data: ${formattedDate}</p>
                         <p>Horário: ${booking.startTime} - ${endTime} (${booking.duration}h)</p>
                         <p>Documento: ${booking.clientDocument}</p>
-                        <p>Telefone: ${booking.clientPhone}</p>
+                        <p>Telefone: <a href="${whatsappLink}" target="_blank" class="whatsapp-link">${booking.clientPhone}</a></p>
                         ${booking.notes ? `<p>Atividade: ${booking.notes}</p>` : ''}
                     </div>
                     <div class="booking-actions">
