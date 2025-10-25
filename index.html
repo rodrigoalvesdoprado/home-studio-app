@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catarse Home Studio - Sistema de Agendamento</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+    
+    <!-- Firebase App e Firestore -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
     <style>
         :root {
             --primary-color: #1a1a1a;
@@ -16,6 +21,8 @@
             --warning-color: #f57c00;
             --error-color: #c62828;
             --info-color: #1976d2;
+            --online-color: #4caf50;
+            --offline-color: #f44336;
         }
         
         * {
@@ -68,7 +75,52 @@
             font-weight: bold;
             text-align: center;
         }
+
+        /* Status de Conexão */
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .connection-status.online {
+            background-color: var(--online-color);
+            color: white;
+        }
+
+        .connection-status.offline {
+            background-color: var(--offline-color);
+            color: white;
+        }
+
+        .connection-status.syncing {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
         
+        /* Resto do CSS permanece igual... */
         /* Menu responsivo */
         nav {
             width: 100%;
@@ -745,6 +797,12 @@
     </style>
 </head>
 <body>
+    <!-- Status de Conexão -->
+    <div id="connection-status" class="connection-status offline">
+        <div class="status-dot"></div>
+        <span id="status-text">Offline</span>
+    </div>
+
     <div class="container">
         <header>
             <div class="header-content">
@@ -1125,7 +1183,372 @@
     </div>
 
     <script>
-        // Código JavaScript ATUALIZADO com sistema de log completo e APIs REAIS
+        // =============================================
+        // CONFIGURAÇÃO FIREBASE
+        // =============================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyACxXMIS1glacTnxzMS-UQAMZR6dm3WYDI",
+            authDomain: "catarse-home-studio.firebaseapp.com",
+            projectId: "catarse-home-studio",
+            storageBucket: "catarse-home-studio.appspot.com",
+            messagingSenderId: "459212604797",
+            appId: "1:459212604797:web:4a3f402028d367a5673814"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // =============================================
+        // SISTEMA DE SINCRONIZAÇÃO FIREBASE
+        // =============================================
+        class FirebaseSync {
+            constructor() {
+                this.isOnline = navigator.onLine;
+                this.syncInProgress = false;
+                this.lastSync = localStorage.getItem('last_sync') || null;
+                this.init();
+            }
+
+            init() {
+                // Monitorar conexão
+                window.addEventListener('online', () => this.handleOnline());
+                window.addEventListener('offline', () => this.handleOffline());
+                
+                // Sincronização automática a cada 30 segundos quando online
+                setInterval(() => {
+                    if (this.isOnline && !this.syncInProgress) {
+                        this.syncData();
+                    }
+                }, 30000);
+
+                // Sincronizar imediatamente se online
+                if (this.isOnline) {
+                    setTimeout(() => this.syncData(), 2000);
+                }
+            }
+
+            handleOnline() {
+                this.isOnline = true;
+                this.updateConnectionStatus('online', 'Conectado');
+                this.syncData();
+            }
+
+            handleOffline() {
+                this.isOnline = false;
+                this.updateConnectionStatus('offline', 'Offline');
+            }
+
+            updateConnectionStatus(status, text) {
+                const statusElement = document.getElementById('connection-status');
+                const statusText = document.getElementById('status-text');
+                
+                statusElement.className = `connection-status ${status}`;
+                statusText.textContent = text;
+            }
+
+            setSyncing(status) {
+                const statusElement = document.getElementById('connection-status');
+                const statusText = document.getElementById('status-text');
+                
+                if (status) {
+                    statusElement.className = 'connection-status syncing';
+                    statusText.textContent = 'Sincronizando...';
+                    this.syncInProgress = true;
+                } else {
+                    this.syncInProgress = false;
+                    this.updateConnectionStatus(
+                        this.isOnline ? 'online' : 'offline',
+                        this.isOnline ? 'Conectado' : 'Offline'
+                    );
+                }
+            }
+
+            async syncData() {
+                if (this.syncInProgress || !this.isOnline) return;
+                
+                this.setSyncing(true);
+                try {
+                    console.log('Iniciando sincronização Firebase...');
+                    
+                    // Sincronizar clientes
+                    await this.syncClients();
+                    
+                    // Sincronizar agendamentos
+                    await this.syncBookings();
+                    
+                    // Sincronizar logs
+                    await this.syncAuditLogs();
+                    
+                    // Atualizar último sync
+                    localStorage.setItem('last_sync', new Date().toISOString());
+                    console.log('Sincronização concluída com sucesso!');
+                    
+                } catch (error) {
+                    console.error('Erro na sincronização:', error);
+                } finally {
+                    this.setSyncing(false);
+                }
+            }
+
+            async syncClients() {
+                try {
+                    // Buscar clientes do Firebase
+                    const snapshot = await db.collection('clientes').get();
+                    const firebaseClients = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+
+                    // Buscar clientes locais
+                    const localClients = JSON.parse(localStorage.getItem('studio_clients')) || [];
+
+                    // Mesclar dados (Firebase tem prioridade em conflitos)
+                    const mergedClients = this.mergeData(localClients, firebaseClients, 'clientes');
+                    
+                    // Salvar localmente
+                    localStorage.setItem('studio_clients', JSON.stringify(mergedClients));
+                    
+                    // Se houver clientes locais mais recentes, enviar para Firebase
+                    const localUpdates = this.getLocalUpdates(localClients, firebaseClients, 'clientes');
+                    for (const client of localUpdates) {
+                        await db.collection('clientes').doc(client.id).set(client, { merge: true });
+                    }
+
+                    return mergedClients;
+                } catch (error) {
+                    console.error('Erro ao sincronizar clientes:', error);
+                    throw error;
+                }
+            }
+
+            async syncBookings() {
+                try {
+                    // Buscar agendamentos do Firebase
+                    const snapshot = await db.collection('agendamentos').get();
+                    const firebaseBookings = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+
+                    // Buscar agendamentos locais
+                    const localBookings = JSON.parse(localStorage.getItem('studio_bookings')) || [];
+
+                    // Mesclar dados
+                    const mergedBookings = this.mergeData(localBookings, firebaseBookings, 'agendamentos');
+                    
+                    // Salvar localmente
+                    localStorage.setItem('studio_bookings', JSON.stringify(mergedBookings));
+                    
+                    // Enviar atualizações locais para Firebase
+                    const localUpdates = this.getLocalUpdates(localBookings, firebaseBookings, 'agendamentos');
+                    for (const booking of localUpdates) {
+                        await db.collection('agendamentos').doc(booking.id).set(booking, { merge: true });
+                    }
+
+                    return mergedBookings;
+                } catch (error) {
+                    console.error('Erro ao sincronizar agendamentos:', error);
+                    throw error;
+                }
+            }
+
+            async syncAuditLogs() {
+                try {
+                    // Buscar logs do Firebase
+                    const snapshot = await db.collection('audit_logs').orderBy('timestamp', 'desc').limit(1000).get();
+                    const firebaseLogs = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+
+                    // Buscar logs locais
+                    const localLogs = JSON.parse(localStorage.getItem('studio_audit_log')) || [];
+
+                    // Mesclar logs (Firebase tem prioridade)
+                    const mergedLogs = this.mergeData(localLogs, firebaseLogs, 'logs');
+                    
+                    // Salvar localmente
+                    localStorage.setItem('studio_audit_log', JSON.stringify(mergedLogs));
+                    
+                    // Enviar novos logs locais para Firebase
+                    const newLocalLogs = localLogs.filter(localLog => 
+                        !firebaseLogs.some(fbLog => fbLog.id === localLog.id)
+                    );
+                    
+                    for (const log of newLocalLogs) {
+                        await db.collection('audit_logs').doc(log.id).set(log);
+                    }
+
+                    return mergedLogs;
+                } catch (error) {
+                    console.error('Erro ao sincronizar logs:', error);
+                    throw error;
+                }
+            }
+
+            mergeData(localData, firebaseData, dataType) {
+                const merged = [...firebaseData];
+                const localMap = new Map(localData.map(item => [item.id, item]));
+                
+                for (const localItem of localData) {
+                    const existingIndex = merged.findIndex(item => item.id === localItem.id);
+                    
+                    if (existingIndex === -1) {
+                        // Item novo local - adicionar
+                        merged.push(localItem);
+                    } else {
+                        // Conflito: usar o mais recente
+                        const existing = merged[existingIndex];
+                        const localUpdated = new Date(localItem.updatedAt || localItem.timestamp || 0);
+                        const firebaseUpdated = new Date(existing.updatedAt || existing.timestamp || 0);
+                        
+                        if (localUpdated > firebaseUpdated) {
+                            merged[existingIndex] = localItem;
+                        }
+                    }
+                }
+                
+                return merged;
+            }
+
+            getLocalUpdates(localData, firebaseData, dataType) {
+                const firebaseMap = new Map(firebaseData.map(item => [item.id, item]));
+                return localData.filter(localItem => {
+                    const firebaseItem = firebaseMap.get(localItem.id);
+                    if (!firebaseItem) return true; // Item novo
+                    
+                    const localUpdated = new Date(localItem.updatedAt || localItem.timestamp || 0);
+                    const firebaseUpdated = new Date(firebaseItem.updatedAt || firebaseItem.timestamp || 0);
+                    
+                    return localUpdated > firebaseUpdated;
+                });
+            }
+
+            // Métodos para salvar dados individualmente
+            async saveClient(client) {
+                try {
+                    // Salvar localmente primeiro (para resposta imediata)
+                    let clients = JSON.parse(localStorage.getItem('studio_clients')) || [];
+                    const index = clients.findIndex(c => c.id === client.id);
+                    
+                    if (index === -1) {
+                        clients.push(client);
+                    } else {
+                        clients[index] = client;
+                    }
+                    
+                    localStorage.setItem('studio_clients', JSON.stringify(clients));
+                    
+                    // Salvar no Firebase (assíncrono)
+                    if (this.isOnline) {
+                        await db.collection('clientes').doc(client.id).set(client, { merge: true });
+                    }
+                    
+                    return client;
+                } catch (error) {
+                    console.error('Erro ao salvar cliente:', error);
+                    throw error;
+                }
+            }
+
+            async saveBooking(booking) {
+                try {
+                    // Salvar localmente primeiro
+                    let bookings = JSON.parse(localStorage.getItem('studio_bookings')) || [];
+                    const index = bookings.findIndex(b => b.id === booking.id);
+                    
+                    if (index === -1) {
+                        bookings.push(booking);
+                    } else {
+                        bookings[index] = booking;
+                    }
+                    
+                    localStorage.setItem('studio_bookings', JSON.stringify(bookings));
+                    
+                    // Salvar no Firebase
+                    if (this.isOnline) {
+                        await db.collection('agendamentos').doc(booking.id).set(booking, { merge: true });
+                    }
+                    
+                    return booking;
+                } catch (error) {
+                    console.error('Erro ao salvar agendamento:', error);
+                    throw error;
+                }
+            }
+
+            async saveAuditLog(log) {
+                try {
+                    // Salvar localmente primeiro
+                    let logs = JSON.parse(localStorage.getItem('studio_audit_log')) || [];
+                    logs.unshift(log);
+                    
+                    if (logs.length > 1000) {
+                        logs = logs.slice(0, 1000);
+                    }
+                    
+                    localStorage.setItem('studio_audit_log', JSON.stringify(logs));
+                    
+                    // Salvar no Firebase
+                    if (this.isOnline) {
+                        await db.collection('audit_logs').doc(log.id).set(log);
+                    }
+                    
+                    return log;
+                } catch (error) {
+                    console.error('Erro ao salvar log:', error);
+                    throw error;
+                }
+            }
+
+            async deleteClient(clientId) {
+                try {
+                    // Remover localmente
+                    let clients = JSON.parse(localStorage.getItem('studio_clients')) || [];
+                    clients = clients.filter(c => c.id !== clientId);
+                    localStorage.setItem('studio_clients', JSON.stringify(clients));
+                    
+                    // Remover do Firebase
+                    if (this.isOnline) {
+                        await db.collection('clientes').doc(clientId).delete();
+                    }
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Erro ao excluir cliente:', error);
+                    throw error;
+                }
+            }
+
+            async deleteBooking(bookingId) {
+                try {
+                    // Remover localmente
+                    let bookings = JSON.parse(localStorage.getItem('studio_bookings')) || [];
+                    bookings = bookings.filter(b => b.id !== bookingId);
+                    localStorage.setItem('studio_bookings', JSON.stringify(bookings));
+                    
+                    // Remover do Firebase
+                    if (this.isOnline) {
+                        await db.collection('agendamentos').doc(bookingId).delete();
+                    }
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Erro ao excluir agendamento:', error);
+                    throw error;
+                }
+            }
+        }
+
+        // =============================================
+        // INICIALIZAR SISTEMA DE SINCRONIZAÇÃO
+        // =============================================
+        const firebaseSync = new FirebaseSync();
+
+        // =============================================
+        // CÓDIGO ORIGINAL COMPLETO (TODAS AS FUNCIONALIDADES)
+        // =============================================
         
         // Menu mobile toggle
         document.querySelector('.mobile-menu-btn').addEventListener('click', function() {
@@ -1140,11 +1563,9 @@
             });
         });
 
-        // Dados persistentes usando localStorage
+        // Dados persistentes usando localStorage (agora sincronizado com Firebase)
         let clients = JSON.parse(localStorage.getItem('studio_clients')) || [];
         let bookings = JSON.parse(localStorage.getItem('studio_bookings')) || [];
-        
-        // NOVO: Sistema de Log de Auditoria
         let auditLog = JSON.parse(localStorage.getItem('studio_audit_log')) || [];
         
         // Elementos da interface
@@ -1404,13 +1825,8 @@
                 user: 'system'
             };
             
-            auditLog.unshift(logEntry);
-            
-            if (auditLog.length > 1000) {
-                auditLog = auditLog.slice(0, 1000);
-            }
-            
-            localStorage.setItem('studio_audit_log', JSON.stringify(auditLog));
+            // Usar Firebase Sync para salvar o log
+            firebaseSync.saveAuditLog(logEntry);
             
             if (document.getElementById('audit').classList.contains('active')) {
                 renderAuditLog();
@@ -1424,12 +1840,14 @@
         function renderAuditLog() {
             auditLogList.innerHTML = '';
             
-            if (auditLog.length === 0) {
+            const logs = JSON.parse(localStorage.getItem('studio_audit_log')) || [];
+            
+            if (logs.length === 0) {
                 auditLogList.innerHTML = '<div class="log-entry"><div class="log-details">Nenhum registro de log encontrado.</div></div>';
                 return;
             }
             
-            let filteredLogs = auditLog.filter(log => {
+            let filteredLogs = logs.filter(log => {
                 if (currentLogFilters.entity !== 'all' && log.entity !== currentLogFilters.entity) {
                     return false;
                 }
@@ -1512,14 +1930,15 @@
          * Atualiza as estatísticas do log
          */
         function updateLogStats() {
+            const logs = JSON.parse(localStorage.getItem('studio_audit_log')) || [];
             const today = new Date().toISOString().split('T')[0];
             
-            const totalLogs = auditLog.length;
-            const todayLogs = auditLog.filter(log => 
+            const totalLogs = logs.length;
+            const todayLogs = logs.filter(log => 
                 new Date(log.timestamp).toISOString().split('T')[0] === today
             ).length;
-            const clientLogs = auditLog.filter(log => log.entity === 'client').length;
-            const bookingLogs = auditLog.filter(log => log.entity === 'booking').length;
+            const clientLogs = logs.filter(log => log.entity === 'client').length;
+            const bookingLogs = logs.filter(log => log.entity === 'booking').length;
             
             totalLogsElement.textContent = totalLogs;
             todayLogsElement.textContent = todayLogs;
@@ -1532,11 +1951,15 @@
          */
         function clearAllLogs() {
             if (confirm('Tem certeza que deseja limpar todo o histórico de logs? Esta ação não pode ser desfeita.')) {
-                auditLog = [];
-                localStorage.setItem('studio_audit_log', JSON.stringify(auditLog));
+                localStorage.setItem('studio_audit_log', JSON.stringify([]));
+                // Também limpar do Firebase
+                if (navigator.onLine) {
+                    // Esta é uma operação avançada - em produção seria mais complexa
+                    console.log('Logs locais limpos. Logs do Firebase permanecem por segurança.');
+                }
                 renderAuditLog();
                 updateLogStats();
-                alert('Todos os logs foram limpos com sucesso!');
+                alert('Todos os logs locais foram limpos com sucesso!');
             }
         }
         
@@ -2117,7 +2540,7 @@
                 const bookingIndex = bookings.findIndex(b => b.id === bookingId);
                 if (bookingIndex !== -1) {
                     const oldBooking = bookings[bookingIndex];
-                    bookings[bookingIndex] = {
+                    const updatedBooking = {
                         ...oldBooking,
                         date,
                         startTime,
@@ -2129,6 +2552,11 @@
                         notes,
                         updatedAt: new Date().toISOString()
                     };
+                    
+                    bookings[bookingIndex] = updatedBooking;
+                    
+                    // Salvar usando Firebase Sync
+                    firebaseSync.saveBooking(updatedBooking);
                     
                     // LOG: Registra a atualização do agendamento
                     logAction('update', 'booking', bookingId, {
@@ -2160,6 +2588,9 @@
                 
                 bookings.push(booking);
                 
+                // Salvar usando Firebase Sync
+                firebaseSync.saveBooking(booking);
+                
                 // LOG: Registra a criação do agendamento
                 logAction('create', 'booking', booking.id, {
                     clientName: client.artisticName,
@@ -2168,8 +2599,6 @@
                     duration: duration
                 });
             }
-            
-            saveBookings();
             
             alert(bookingId ? 'Agendamento atualizado com sucesso!' : 'Agendamento realizado com sucesso!');
             bookingModal.classList.remove('active');
@@ -2257,9 +2686,16 @@
             const bookingIndex = bookings.findIndex(b => b.id === bookingId);
             
             if (bookingIndex !== -1) {
-                bookings[bookingIndex].activitiesCompleted = activities;
-                bookings[bookingIndex].updatedAt = new Date().toISOString();
-                saveBookings();
+                const updatedBooking = {
+                    ...bookings[bookingIndex],
+                    activitiesCompleted: activities,
+                    updatedAt: new Date().toISOString()
+                };
+                
+                bookings[bookingIndex] = updatedBooking;
+                
+                // Salvar usando Firebase Sync
+                firebaseSync.saveBooking(updatedBooking);
                 
                 // LOG: Registra a atualização das atividades
                 logAction('activity', 'booking', bookingId, {
@@ -2286,7 +2722,9 @@
             if (selectedBookingId && confirm('Tem certeza que deseja excluir este agendamento?')) {
                 const booking = bookings.find(b => b.id === selectedBookingId);
                 bookings = bookings.filter(booking => booking.id !== selectedBookingId);
-                saveBookings();
+                
+                // Excluir usando Firebase Sync
+                firebaseSync.deleteBooking(selectedBookingId);
                 
                 // LOG: Registra a exclusão do agendamento
                 logAction('delete', 'booking', selectedBookingId, {
@@ -2366,7 +2804,7 @@
                 const clientIndex = clients.findIndex(c => c.id === clientId);
                 if (clientIndex !== -1) {
                     const oldClient = clients[clientIndex];
-                    clients[clientIndex] = {
+                    const updatedClient = {
                         ...oldClient,
                         type,
                         document: clientDocument,
@@ -2387,6 +2825,11 @@
                         },
                         updatedAt: new Date().toISOString()
                     };
+                    
+                    clients[clientIndex] = updatedClient;
+                    
+                    // Salvar usando Firebase Sync
+                    firebaseSync.saveClient(updatedClient);
                     
                     // LOG: Registra a atualização do cliente
                     logAction('update', 'client', clientId, {
@@ -2426,6 +2869,9 @@
                 
                 clients.push(client);
                 
+                // Salvar usando Firebase Sync
+                firebaseSync.saveClient(client);
+                
                 // LOG: Registra a criação do cliente
                 logAction('create', 'client', client.id, {
                     artisticName: artisticName,
@@ -2434,8 +2880,6 @@
                 
                 showClientAlert('Cliente cadastrado com sucesso!', 'success');
             }
-            
-            saveClients();
             
             // Limpa o formulário automaticamente após cadastro bem-sucedido
             if (!clientId) {
@@ -2694,7 +3138,9 @@
                 
                 const client = clients.find(c => c.id === clientId);
                 clients = clients.filter(client => client.id !== clientId);
-                saveClients();
+                
+                // Excluir usando Firebase Sync
+                firebaseSync.deleteClient(clientId);
                 
                 // LOG: Registra a exclusão do cliente
                 logAction('delete', 'client', clientId, {
@@ -2880,21 +3326,17 @@
             return `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
         }
         
-        // Persistência de dados
-        function saveClients() {
-            localStorage.setItem('studio_clients', JSON.stringify(clients));
-        }
-        
-        function saveBookings() {
-            localStorage.setItem('studio_bookings', JSON.stringify(bookings));
-        }
-        
-        // Inicialização
+        // Função para forçar sincronização manual
+        window.forceSync = function() {
+            firebaseSync.syncData();
+        };
+
+        // Inicialização do sistema
         renderCalendar();
         renderClientsList();
         renderBookingsList();
         updateClientStats();
-        
+
         // Define as datas padrão para o relatório
         const today = new Date();
         const lastMonth = new Date();
@@ -2904,6 +3346,18 @@
         document.getElementById('report-end-date').value = today.toISOString().split('T')[0];
         
         generateReport();
+
+        // Adicionar botão de sync manual (opcional)
+        const syncButton = document.createElement('button');
+        syncButton.className = 'btn btn-info';
+        syncButton.innerHTML = '🔄 Sincronizar Agora';
+        syncButton.style.marginLeft = '10px';
+        syncButton.onclick = forceSync;
+        document.querySelector('.calendar-nav').appendChild(syncButton);
+
+        console.log('Sistema Catarse Home Studio com Firebase inicializado!');
+        console.log('Status da conexão:', navigator.onLine ? 'Online' : 'Offline');
+
     </script>
 </body>
 </html>
