@@ -409,5 +409,48 @@
     <script src="js/reports.js"></script>
     <script src="js/audit-log.js"></script>
     <script src="js/app.js"></script>
+
+    <!-- NOVO MODAL: Alerta de Clientes Duplicados -->
+    <div id="duplicate-alert-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="duplicate-alert-message">Clientes Similares Encontrados</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <strong>⚠️ Atenção!</strong> Encontramos clientes com dados similares. 
+                    Verifique se não é a mesma pessoa antes de continuar.
+                </div>
+                
+                <div class="duplicate-clients-list" id="duplicate-clients-list">
+                    <!-- Lista de clientes similares será preenchida via JavaScript -->
+                </div>
+                
+                <div class="duplicate-actions" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+                    <button class="btn btn-warning" id="use-existing-client-btn">
+                        🚫 Usar Cliente Existente (Cancelar Cadastro)
+                    </button>
+                    <button class="btn btn-info" id="edit-existing-client-btn">
+                        ✏️ Editar Cliente Existente
+                    </button>
+                    <button class="btn btn-success" id="continue-new-client-btn">
+                        ✅ Continuar com Novo Cadastro
+                    </button>
+                </div>
+                
+                <div style="margin-top: 15px; padding: 10px; background: var(--secondary-color); border-radius: 4px;">
+                    <small style="color: #aaa;">
+                        <strong>Dica:</strong> 
+                        <br>• <strong>Usar Existente</strong> - Cancela este cadastro e usa o cliente já cadastrado
+                        <br>• <strong>Editar Existente</strong> - Abre o cliente similar para edição  
+                        <br>• <strong>Continuar</strong> - Prossegue com este cadastro (cliente diferente)
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
