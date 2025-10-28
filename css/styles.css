@@ -439,6 +439,10 @@ input, select, textarea {
     background-color: var(--info-color);
 }
 
+.alert-warning {
+    background-color: var(--warning-color);
+}
+
 .report-controls {
     display: flex;
     flex-direction: column;
@@ -683,6 +687,90 @@ input, select, textarea {
     color: white;
 }
 
+/* NOVOS ESTILOS PARA O MODAL DE DUPLICATAS */
+.duplicate-clients-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 15px 0;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.duplicate-client-item {
+    background-color: var(--secondary-color);
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    border-left: 4px solid var(--warning-color);
+}
+
+.duplicate-client-item:last-child {
+    margin-bottom: 0;
+}
+
+.duplicate-client-item .client-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.duplicate-client-item .client-info strong {
+    color: var(--text-color);
+    font-size: 16px;
+}
+
+.duplicate-client-item .client-details {
+    color: #aaa;
+    font-size: 14px;
+}
+
+.duplicate-client-item .match-type {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    display: inline-block;
+    width: fit-content;
+}
+
+.duplicate-client-item .match-type.cpf_exato {
+    background-color: var(--error-color);
+    color: white;
+}
+
+.duplicate-client-item .match-type.telefone_igual {
+    background-color: var(--warning-color);
+    color: white;
+}
+
+.duplicate-client-item .match-type.nome_similar {
+    background-color: var(--info-color);
+    color: white;
+}
+
+.duplicate-client-item .match-type.cpf_similar {
+    background-color: #ff9800;
+    color: white;
+}
+
+.duplicate-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.duplicate-actions .btn {
+    justify-content: center;
+    text-align: center;
+    padding: 12px;
+    font-size: 14px;
+}
+
+.modal-body {
+    padding: 10px 0;
+}
+
 /* Desktop */
 @media (min-width: 768px) {
     .header-content {
@@ -756,6 +844,14 @@ input, select, textarea {
     .cep-search {
         align-items: end;
     }
+
+    .duplicate-actions {
+        flex-direction: row;
+    }
+
+    .duplicate-actions .btn {
+        flex: 1;
+    }
 }
 
 @media (max-width: 767px) {
@@ -778,5 +874,9 @@ input, select, textarea {
     .cep-search {
         flex-direction: column;
         gap: 10px;
+    }
+
+    .duplicate-actions {
+        flex-direction: column;
     }
 }
