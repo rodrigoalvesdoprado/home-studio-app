@@ -55,6 +55,28 @@ class CatarseApp {
                 }
             }
         });
+
+        // NOVO: Fechar modal de duplicatas com o botão X
+        document.querySelectorAll('#duplicate-alert-modal .close-modal').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('duplicate-alert-modal').classList.remove('active');
+                if (this.clientsManager) {
+                    this.clientsManager.pendingClientData = null;
+                    this.clientsManager.duplicateResults = null;
+                }
+            });
+        });
+
+        // NOVO: Fechar modal de duplicatas clicando fora
+        document.getElementById('duplicate-alert-modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('duplicate-alert-modal')) {
+                document.getElementById('duplicate-alert-modal').classList.remove('active');
+                if (this.clientsManager) {
+                    this.clientsManager.pendingClientData = null;
+                    this.clientsManager.duplicateResults = null;
+                }
+            }
+        });
     }
 
     setupMenu() {
