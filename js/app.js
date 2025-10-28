@@ -77,6 +77,68 @@ class CatarseApp {
                 }
             }
         });
+
+        // NOVO: Detectar se app está rodando como PWA
+        this.setupPWAFeatures();
+    }
+
+    // NOVO: Configura recursos específicos do PWA
+    setupPWAFeatures() {
+        // Verifica se está rodando como app instalado
+        const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                      window.navigator.standalone === true;
+
+        if (isPWA) {
+            console.log('🚀 Executando como PWA instalado');
+            document.body.classList.add('pwa-mode');
+            
+            // Pode adicionar comportamentos específicos para PWA aqui
+        } else {
+            console.log('🌐 Executando no navegador');
+            
+            // Mostra dica de instalação após algum tempo de uso
+            setTimeout(() => {
+                this.showPWAInstallPrompt();
+            }, 30000); // 30 segundos
+        }
+
+        // Monitora mudanças na conexão para PWA
+        window.addEventListener('online', () => {
+            console.log('📡 Conexão restaurada - Sincronizando...');
+            this.forceSync();
+        });
+
+        window.addEventListener('offline', () => {
+            console.log('🔴 Modo offline ativado');
+            this.showOfflineNotification();
+        });
+    }
+
+    // NOVO: Mostra notificação de modo offline
+    showOfflineNotification() {
+        // Poderia mostrar um toast/notificação sutil
+        console.log('💡 Modo offline: Dados locais sendo usados');
+    }
+
+    // NOVO: Sugere instalação do PWA
+    showPWAInstallPrompt() {
+        // Só mostra se for compatível com instalação
+        if (this.canShowInstallPrompt() && !this.hasSeenInstallPrompt()) {
+            console.log('💡 Sugerindo instalação do app...');
+            // Aqui poderia mostrar um modal/banner educacional
+            // sobre os benefícios de instalar como app
+        }
+    }
+
+    // NOVO: Verifica se pode mostrar prompt de instalação
+    canShowInstallPrompt() {
+        return 'serviceWorker' in navigator && 
+               'BeforeInstallPromptEvent' in window;
+    }
+
+    // NOVO: Verifica se usuário já viu o prompt
+    hasSeenInstallPrompt() {
+        return localStorage.getItem('pwa_install_prompt_seen') === 'true';
     }
 
     setupMenu() {
