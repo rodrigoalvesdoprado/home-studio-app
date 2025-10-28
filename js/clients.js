@@ -8,6 +8,10 @@ class ClientsManager {
         this.editingClientId = null;
         this.clientSort = { column: 'name', direction: 'asc' };
         this.cpfValidationState = { validated: false, valid: false };
+        
+        // NOVO: Estado para controle de duplicatas
+        this.pendingClientData = null;
+        
         this.init();
     }
 
@@ -39,6 +43,11 @@ class ClientsManager {
                 this.searchCEP();
             }
         });
+
+        // NOVO: Event listeners para o modal de duplicatas
+        document.getElementById('use-existing-client-btn').addEventListener('click', () => this.useExistingClient());
+        document.getElementById('edit-existing-client-btn').addEventListener('click', () => this.editExistingClient());
+        document.getElementById('continue-new-client-btn').addEventListener('click', () => this.continueNewClient());
     }
 
     setupMasks() {
@@ -52,6 +61,242 @@ class ClientsManager {
         document.getElementById('client-cep').addEventListener('input', (e) => this.handleCEPInput(e));
     }
 
+    // NOVO: Método principal de verificação de duplicatas
+    async checkForDuplicates(clientData, currentClientId = null) {
+        const similarClients = Utils.findSimilarClients(this.app.clients, clientData, currentClientId);
+        const sortedResults = Utils.sortSimilarityResults(similarClients);
+        
+        // Se não encontrou nenhum similar, retorna null
+        if (sortedResults.length === 0) {
+            return null;
+        }
+
+        return {
+            exactMatches: similarClients.exactMatches,
+            allMatches: sortedResults,
+            hasExactMatch: similarClients.exactMatches.length > 0
+        };
+    }
+
+    // NOVO: Mostrar modal de duplicatas
+    showDuplicateAlert(duplicateResults, clientData) {
+        // Guarda os dados do cliente pendente
+        this.pendingClientData = clientData;
+        this.duplicateResults = duplicateResults;
+
+        const modal = document.getElementById('duplicate-alert-modal');
+        const clientList = document.getElementById('duplicate-clients-list');
+        
+        // Limpa lista anterior
+        clientList.innerHTML = '';
+
+        // Adiciona cada cliente similar à lista
+        duplicateResults.allMatches.forEach((client, index) => {
+            const clientElement = document.createElement('div');
+            clientElement.className = 'duplicate-client-item';
+            clientElement.innerHTML = `
+                <div class="client-info">
+                    <strong>${client.artisticName}</strong>
+                    <div class="client-details">
+                        ${client.document ? `CPF/CNPJ: ${client.document}` : ''}
+                        ${client.phone ? ` | Tel: ${client.phone}` : ''}
+                    </div>
+                    <div class="match-type ${client.matchType}">
+                        ${this.getMatchTypeText(client.matchType)}
+                    </div>
+                </div>
+            `;
+            clientList.appendChild(clientElement);
+        });
+
+        // Atualiza mensagem baseada no tipo de match
+        const messageElement = document.getElementById('duplicate-alert-message');
+        if (duplicateResults.hasExactMatch) {
+            messageElement.innerHTML = '<strong>⚠️ CPF/CNPJ Já Cadastrado!</strong><br>Encontramos clientes com o mesmo documento.';
+        } else {
+            messageElement.innerHTML = '<strong>🔍 Clientes Similares Encontrados</strong><br>Verifique se não é a mesma pessoa:';
+        }
+
+        // Mostra o modal
+        modal.classList.add('active');
+    }
+
+    // NOVO: Texto descritivo para tipos de match
+    getMatchTypeText(matchType) {
+        const types = {
+            'cpf_exato': 'CPF/CNPJ idêntico',
+            'telefone_igual': 'Telefone igual', 
+            'nome_similar': 'Nome similar',
+            'cpf_similar': 'CPF similar'
+        };
+        return types[matchType] || 'Similar';
+    }
+
+    // NOVO: Usar cliente existente (fecha formulário)
+    useExistingClient() {
+        this.closeDuplicateModal();
+        this.resetClientForm();
+        this.showClientAlert('Operação cancelada. Cliente já existe no sistema.', 'info');
+    }
+
+    // NOVO: Editar cliente existente
+    editExistingClient() {
+        if (this.duplicateResults.allMatches.length > 0) {
+            const firstClient = this.duplicateResults.allMatches[0];
+            this.closeDuplicateModal();
+            this.resetClientForm();
+            this.editClient(firstClient.id);
+        }
+    }
+
+    // NOVO: Continuar com novo cadastro (sobrescrever/ignorar)
+    continueNewClient() {
+        this.closeDuplicateModal();
+        // Prossegue com o cadastro original
+        this.processClientSubmit(this.pendingClientData);
+    }
+
+    // NOVO: Fechar modal de duplicatas
+    closeDuplicateModal() {
+        document.getElementById('duplicate-alert-modal').classList.remove('active');
+        this.pendingClientData = null;
+        this.duplicateResults = null;
+    }
+
+    // MODIFICADO: Agora verifica duplicatas antes de salvar
+    async handleClientSubmit(e) {
+        e.preventDefault();
+        
+        const clientData = this.getFormData();
+        
+        // Validações básicas
+        if (!this.validateForm(clientData)) {
+            return;
+        }
+
+        // Verifica duplicatas (exceto se estiver editando o mesmo cliente)
+        const duplicateResults = await this.checkForDuplicates(clientData, this.editingClientId);
+        
+        if (duplicateResults && duplicateResults.allMatches.length > 0) {
+            // Mostra modal de duplicatas
+            this.showDuplicateAlert(duplicateResults, clientData);
+        } else {
+            // Não encontrou duplicatas, prossegue normalmente
+            this.processClientSubmit(clientData);
+        }
+    }
+
+    // NOVO: Extrai dados do formulário
+    getFormData() {
+        return {
+            type: document.getElementById('client-type').value,
+            document: document.getElementById('client-document').value,
+            fullName: document.getElementById('client-fullname').value,
+            artisticName: document.getElementById('client-name').value,
+            phone: document.getElementById('client-phone').value,
+            email: document.getElementById('client-email').value,
+            notes: document.getElementById('client-notes').value,
+            address: {
+                cep: document.getElementById('client-cep').value,
+                street: document.getElementById('client-street').value,
+                number: document.getElementById('client-number').value,
+                neighborhood: document.getElementById('client-neighborhood').value,
+                complement: document.getElementById('client-complement').value,
+                city: document.getElementById('client-city').value,
+                state: document.getElementById('client-state').value
+            }
+        };
+    }
+
+    // NOVO: Validação do formulário
+    validateForm(clientData) {
+        const { document, fullName, artisticName, phone } = clientData;
+        
+        if (!document || !fullName || !artisticName || !phone) {
+            this.showClientAlert('Por favor, preencha todos os campos obrigatórios.', 'error');
+            return false;
+        }
+        
+        if (!this.validateDocument()) {
+            this.showClientAlert('Por favor, digite um documento válido.', 'error');
+            return false;
+        }
+        
+        // Validação extra para CPF
+        if (clientData.type === 'cpf' && this.cpfValidationState.validated && !this.cpfValidationState.valid) {
+            const proceed = confirm('Este CPF foi considerado inválido. Deseja continuar mesmo assim?');
+            if (!proceed) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    // MODIFICADO: Processamento final do cadastro (separado da validação)
+    async processClientSubmit(clientData) {
+        const clientId = document.getElementById('client-id').value;
+        
+        if (clientId) {
+            // Atualiza o cliente existente
+            await this.updateExistingClient(clientId, clientData);
+        } else {
+            // Cria um novo cliente
+            await this.createNewClient(clientData);
+        }
+        
+        this.renderClientsList();
+        this.updateClientStats();
+    }
+
+    // NOVO: Atualizar cliente existente
+    async updateExistingClient(clientId, clientData) {
+        const clientIndex = this.app.clients.findIndex(c => c.id === clientId);
+        if (clientIndex !== -1) {
+            const oldClient = this.app.clients[clientIndex];
+            const updatedClient = {
+                ...oldClient,
+                ...clientData,
+                updatedAt: new Date().toISOString()
+            };
+            
+            this.app.clients[clientIndex] = updatedClient;
+            await this.app.firebaseSync.saveClient(updatedClient);
+            
+            this.app.logAction('update', 'client', clientId, {
+                artisticName: clientData.artisticName,
+                document: clientData.document,
+                oldName: oldClient.artisticName
+            });
+            
+            this.showClientAlert('Cliente atualizado com sucesso!', 'success');
+        }
+    }
+
+    // NOVO: Criar novo cliente
+    async createNewClient(clientData) {
+        const client = {
+            id: Utils.generateId(),
+            ...clientData,
+            totalHours: 0,
+            totalSessions: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        
+        this.app.clients.push(client);
+        await this.app.firebaseSync.saveClient(client);
+        
+        this.app.logAction('create', 'client', client.id, {
+            artisticName: clientData.artisticName,
+            document: clientData.document
+        });
+        
+        this.showClientAlert('Cliente cadastrado com sucesso!', 'success');
+        this.resetClientForm();
+    }
+
+    // MÉTODOS EXISTENTES (mantidos intactos)
     handleDocumentInput(e) {
         const type = document.getElementById('client-type').value;
         let value = e.target.value.replace(/\D/g, '');
@@ -74,7 +319,6 @@ class ClientsManager {
         e.target.value = value;
         this.clearValidationStatus();
         
-        // Mostra/oculta o botão de validação para CPF
         if (type === 'cpf' && value.replace(/\D/g, '').length === 11) {
             document.getElementById('validate-cpf').style.display = 'block';
         } else {
@@ -120,165 +364,6 @@ class ClientsManager {
         documentInput.style.borderColor = 'var(--border-color)';
         document.getElementById('validate-cpf').style.display = 'none';
         this.clearValidationStatus();
-    }
-
-    async handleClientSubmit(e) {
-        e.preventDefault();
-        
-        const type = document.getElementById('client-type').value;
-        const clientDocument = document.getElementById('client-document').value;
-        const fullName = document.getElementById('client-fullname').value;
-        const artisticName = document.getElementById('client-name').value;
-        const phone = document.getElementById('client-phone').value;
-        const email = document.getElementById('client-email').value;
-        const notes = document.getElementById('client-notes').value;
-        const clientId = document.getElementById('client-id').value;
-        
-        // Campos de endereço
-        const cep = document.getElementById('client-cep').value;
-        const street = document.getElementById('client-street').value;
-        const number = document.getElementById('client-number').value;
-        const neighborhood = document.getElementById('client-neighborhood').value;
-        const complement = document.getElementById('client-complement').value;
-        const city = document.getElementById('client-city').value;
-        const state = document.getElementById('client-state').value;
-        
-        // Validações básicas
-        if (!clientDocument || !fullName || !artisticName || !phone) {
-            this.showClientAlert('Por favor, preencha todos os campos obrigatórios.', 'error');
-            return;
-        }
-        
-        // Valida o documento
-        if (!this.validateDocument()) {
-            this.showClientAlert('Por favor, digite um documento válido.', 'error');
-            return;
-        }
-        
-        // Validação extra para CPF
-        if (type === 'cpf' && this.cpfValidationState.validated && !this.cpfValidationState.valid) {
-            const proceed = confirm('Este CPF foi considerado inválido. Deseja continuar mesmo assim?');
-            if (!proceed) {
-                return;
-            }
-        }
-        
-        // Verifica se o cliente já existe
-        const existingClient = this.app.clients.find(client => 
-            client.document === clientDocument && client.id !== clientId
-        );
-        
-        if (existingClient) {
-            this.showClientAlert('Já existe um cliente cadastrado com este documento.', 'error');
-            return;
-        }
-        
-        if (clientId) {
-            // Atualiza o cliente existente
-            const clientIndex = this.app.clients.findIndex(c => c.id === clientId);
-            if (clientIndex !== -1) {
-                const oldClient = this.app.clients[clientIndex];
-                const updatedClient = {
-                    ...oldClient,
-                    type,
-                    document: clientDocument,
-                    fullName,
-                    artisticName,
-                    phone,
-                    email,
-                    notes,
-                    address: {
-                        cep,
-                        street,
-                        number,
-                        neighborhood,
-                        complement,
-                        city,
-                        state
-                    },
-                    updatedAt: new Date().toISOString()
-                };
-                
-                this.app.clients[clientIndex] = updatedClient;
-                await this.app.firebaseSync.saveClient(updatedClient);
-                
-                this.app.logAction('update', 'client', clientId, {
-                    artisticName: artisticName,
-                    document: clientDocument,
-                    oldName: oldClient.artisticName
-                });
-                
-                this.showClientAlert('Cliente atualizado com sucesso!', 'success');
-            }
-        } else {
-            // Cria um novo cliente
-            const client = {
-                id: Utils.generateId(),
-                type,
-                document: clientDocument,
-                fullName,
-                artisticName,
-                phone,
-                email,
-                notes,
-                address: {
-                    cep,
-                    street,
-                    number,
-                    neighborhood,
-                    complement,
-                    city,
-                    state
-                },
-                totalHours: 0,
-                totalSessions: 0,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
-            
-            this.app.clients.push(client);
-            await this.app.firebaseSync.saveClient(client);
-            
-            this.app.logAction('create', 'client', client.id, {
-                artisticName: artisticName,
-                document: clientDocument
-            });
-            
-            this.showClientAlert('Cliente cadastrado com sucesso!', 'success');
-        }
-        
-        // Limpa o formulário automaticamente após cadastro bem-sucedido
-        if (!clientId) {
-            this.resetClientForm();
-        }
-        
-        this.renderClientsList();
-        this.updateClientStats();
-    }
-
-    validateDocument() {
-        const documentInput = document.getElementById('client-document');
-        const errorElement = document.getElementById('document-error');
-        const type = document.getElementById('client-type').value;
-        const documentValue = documentInput.value.replace(/\D/g, '');
-        
-        let isValid = false;
-        
-        if (type === 'cpf') {
-            isValid = documentValue.length === 11 && Utils.validateCPF(documentValue);
-        } else {
-            isValid = documentValue.length === 14 && Utils.validateCNPJ(documentValue);
-        }
-        
-        if (documentValue.length > 0 && !isValid) {
-            errorElement.style.display = 'block';
-            documentInput.style.borderColor = 'var(--error-color)';
-        } else {
-            errorElement.style.display = 'none';
-            documentInput.style.borderColor = 'var(--border-color)';
-        }
-        
-        return isValid;
     }
 
     async validateCPF() {
@@ -411,7 +496,6 @@ class ClientsManager {
         document.getElementById('validate-cpf').style.display = 'none';
         this.clearValidationStatus();
         
-        // Limpa campos de endereço
         document.getElementById('client-street').value = '';
         document.getElementById('client-number').value = '';
         document.getElementById('client-neighborhood').value = '';
@@ -631,6 +715,31 @@ class ClientsManager {
             this.updateClientStats();
             alert('Cliente excluído com sucesso!');
         }
+    }
+
+    validateDocument() {
+        const documentInput = document.getElementById('client-document');
+        const errorElement = document.getElementById('document-error');
+        const type = document.getElementById('client-type').value;
+        const documentValue = documentInput.value.replace(/\D/g, '');
+        
+        let isValid = false;
+        
+        if (type === 'cpf') {
+            isValid = documentValue.length === 11 && Utils.validateCPF(documentValue);
+        } else {
+            isValid = documentValue.length === 14 && Utils.validateCNPJ(documentValue);
+        }
+        
+        if (documentValue.length > 0 && !isValid) {
+            errorElement.style.display = 'block';
+            documentInput.style.borderColor = 'var(--error-color)';
+        } else {
+            errorElement.style.display = 'none';
+            documentInput.style.borderColor = 'var(--border-color)';
+        }
+        
+        return isValid;
     }
 }
 
