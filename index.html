@@ -6,6 +6,17 @@
     <title>Catarse Home Studio - Sistema de Agendamento</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
     
+    <!-- ==================== -->
+    <!-- NOVAS TAGS PWA -->
+    <!-- ==================== -->
+    <meta name="theme-color" content="#ff5500">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Catarse Studio">
+    <link rel="apple-touch-icon" href="assets/sua-logo-20-p-cento.png">
+    <link rel="manifest" href="manifest.json">
+    <!-- ==================== -->
+    
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -24,7 +35,7 @@
         <header>
             <div class="header-content">
                 <div class="logo">
-                    <img src="assets/sua-logo-20-p-cento.jpg" alt="Catarse Home Studio" class="logo-image">
+                    <img src="assets/sua-logo-20-p-cento.png" alt="Catarse Home Studio" class="logo-image">
                     <div class="logo-text">Catarse Home Studio</div>
                 </div>
                 
@@ -451,6 +462,35 @@
             </div>
         </div>
     </div>
+
+    <!-- ==================== -->
+    <!-- NOVO: REGISTRO SERVICE WORKER -->
+    <!-- ==================== -->
+    <script>
+        // Registra o Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('✅ Service Worker registrado com sucesso:', registration.scope);
+                    })
+                    .catch(function(error) {
+                        console.log('❌ Service Worker falhou:', error);
+                    });
+            });
+        }
+
+        // Detecta se é PWA (app instalado)
+        function isRunningAsPWA() {
+            return window.matchMedia('(display-mode: standalone)').matches || 
+                   window.navigator.standalone === true;
+        }
+
+        // Mostra instruções de instalação se não for PWA
+        if (!isRunningAsPWA() && 'serviceWorker' in navigator) {
+            console.log('📱 App pode ser instalado como PWA');
+        }
+    </script>
 
 </body>
 </html>
