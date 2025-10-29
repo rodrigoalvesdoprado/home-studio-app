@@ -83,17 +83,17 @@ class FirebaseSync {
         
         this.setSyncing(true);
         try {
-            console.log('Iniciando sincronização Firebase...');
+            console.log('🔄 Iniciando sincronização Firebase...');
             
             await this.syncClients();
             await this.syncBookings();
             await this.syncAuditLogs();
             
             localStorage.setItem('last_sync', new Date().toISOString());
-            console.log('Sincronização concluída com sucesso!');
+            console.log('✅ Sincronização concluída com sucesso!');
             
         } catch (error) {
-            console.error('Erro na sincronização:', error);
+            console.error('❌ Erro na sincronização:', error);
         } finally {
             this.setSyncing(false);
         }
@@ -119,7 +119,7 @@ class FirebaseSync {
 
             return mergedClients;
         } catch (error) {
-            console.error('Erro ao sincronizar clientes:', error);
+            console.error('❌ Erro ao sincronizar clientes:', error);
             throw error;
         }
     }
@@ -144,7 +144,7 @@ class FirebaseSync {
 
             return mergedBookings;
         } catch (error) {
-            console.error('Erro ao sincronizar agendamentos:', error);
+            console.error('❌ Erro ao sincronizar agendamentos:', error);
             throw error;
         }
     }
@@ -172,32 +172,60 @@ class FirebaseSync {
 
             return mergedLogs;
         } catch (error) {
-            console.error('Erro ao sincronizar logs:', error);
+            console.error('❌ Erro ao sincronizar logs:', error);
             throw error;
         }
     }
 
+    // CORRIGIDO: Método mergeData para evitar duplicatas
     mergeData(localData, firebaseData, dataType) {
         const merged = [...firebaseData];
         const localMap = new Map(localData.map(item => [item.id, item]));
         
         for (const localItem of localData) {
-            const existingIndex = merged.findIndex(item => item.id === localItem.id);
+            // NOVO: Tenta encontrar por documento também, não só por ID
+            const existingByDocument = merged.find(item => 
+                item.document && localItem.document && 
+                this.cleanDocument(item.document) === this.cleanDocument(localItem.document)
+            );
             
-            if (existingIndex === -1) {
-                merged.push(localItem);
-            } else {
-                const existing = merged[existingIndex];
+            if (existingByDocument) {
+                // Se encontrou pelo documento, usa o ID do Firebase mas mantém dados mais recentes
+                const existingIndex = merged.findIndex(item => item.id === existingByDocument.id);
                 const localUpdated = new Date(localItem.updatedAt || localItem.timestamp || 0);
-                const firebaseUpdated = new Date(existing.updatedAt || existing.timestamp || 0);
+                const firebaseUpdated = new Date(existingByDocument.updatedAt || existingByDocument.timestamp || 0);
                 
                 if (localUpdated > firebaseUpdated) {
-                    merged[existingIndex] = localItem;
+                    // Mantém o ID do Firebase mas atualiza com dados locais
+                    merged[existingIndex] = {
+                        ...localItem,
+                        id: existingByDocument.id // GARANTE MESMO ID
+                    };
+                }
+            } else {
+                // Item novo - verifica se já existe pelo ID
+                const existingIndex = merged.findIndex(item => item.id === localItem.id);
+                
+                if (existingIndex === -1) {
+                    merged.push(localItem);
+                } else {
+                    const existing = merged[existingIndex];
+                    const localUpdated = new Date(localItem.updatedAt || localItem.timestamp || 0);
+                    const firebaseUpdated = new Date(existing.updatedAt || existing.timestamp || 0);
+                    
+                    if (localUpdated > firebaseUpdated) {
+                        merged[existingIndex] = localItem;
+                    }
                 }
             }
         }
         
         return merged;
+    }
+
+    // NOVO: Método auxiliar para limpar documento
+    cleanDocument(document) {
+        return document ? document.replace(/\D/g, '') : '';
     }
 
     getLocalUpdates(localData, firebaseData, dataType) {
@@ -233,7 +261,7 @@ class FirebaseSync {
             
             return client;
         } catch (error) {
-            console.error('Erro ao salvar cliente:', error);
+            console.error('❌ Erro ao salvar cliente:', error);
             throw error;
         }
     }
@@ -257,7 +285,7 @@ class FirebaseSync {
             
             return booking;
         } catch (error) {
-            console.error('Erro ao salvar agendamento:', error);
+            console.error('❌ Erro ao salvar agendamento:', error);
             throw error;
         }
     }
@@ -279,7 +307,7 @@ class FirebaseSync {
             
             return log;
         } catch (error) {
-            console.error('Erro ao salvar log:', error);
+            console.error('❌ Erro ao salvar log:', error);
             throw error;
         }
     }
@@ -296,7 +324,7 @@ class FirebaseSync {
             
             return true;
         } catch (error) {
-            console.error('Erro ao excluir cliente:', error);
+            console.error('❌ Erro ao excluir cliente:', error);
             throw error;
         }
     }
@@ -313,7 +341,7 @@ class FirebaseSync {
             
             return true;
         } catch (error) {
-            console.error('Erro ao excluir agendamento:', error);
+            console.error('❌ Erro ao excluir agendamento:', error);
             throw error;
         }
     }
