@@ -9,6 +9,10 @@ class CatarseApp {
         this.bookings = JSON.parse(localStorage.getItem('studio_bookings')) || [];
         this.auditLog = JSON.parse(localStorage.getItem('studio_audit_log')) || [];
         
+        // Controle de instalação PWA
+        this.deferredPrompt = null;
+        this.installButton = null;
+        
         // Inicializar módulos
         this.init();
     }
@@ -34,7 +38,7 @@ class CatarseApp {
             this.setupGlobalEventListeners();
             this.setupMenu();
             
-            // NOVO: Botão de instalação PWA
+            // Sistema de instalação PWA
             this.setupPWAInstallButton();
 
             console.log('✅ Catarse Home Studio inicializado com sucesso!');
@@ -59,7 +63,7 @@ class CatarseApp {
             }
         });
 
-        // NOVO: Fechar modal de duplicatas com o botão X
+        // Fechar modal de duplicatas com o botão X
         document.querySelectorAll('#duplicate-alert-modal .close-modal').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.getElementById('duplicate-alert-modal').classList.remove('active');
@@ -70,7 +74,7 @@ class CatarseApp {
             });
         });
 
-        // NOVO: Fechar modal de duplicatas clicando fora
+        // Fechar modal de duplicatas clicando fora
         document.getElementById('duplicate-alert-modal').addEventListener('click', (e) => {
             if (e.target === document.getElementById('duplicate-alert-modal')) {
                 document.getElementById('duplicate-alert-modal').classList.remove('active');
@@ -81,113 +85,187 @@ class CatarseApp {
             }
         });
 
-        // NOVO: Detectar se app está rodando como PWA
+        // Detectar se app está rodando como PWA
         this.setupPWAFeatures();
     }
 
-    // NOVO: Botão de instalação PWA
+    // SISTEMA COMPLETO DE INSTALAÇÃO PWA
     setupPWAInstallButton() {
+        // Remove botão anterior se existir
+        const oldBtn = document.getElementById('pwa-install-btn');
+        if (oldBtn) oldBtn.remove();
+
         // Cria o botão de instalação
-        const installButton = document.createElement('button');
-        installButton.id = 'pwa-install-btn';
-        installButton.className = 'btn btn-info';
-        installButton.innerHTML = '📱 Instalar App';
-        installButton.style.display = 'none';
+        this.installButton = document.createElement('button');
+        this.installButton.id = 'pwa-install-btn';
+        this.installButton.className = 'btn btn-info';
+        this.installButton.innerHTML = '📱 Instalar App';
+        this.installButton.style.display = 'none';
         
         // Adiciona ao header do calendário
         const calendarNav = document.querySelector('.calendar-nav');
         if (calendarNav) {
-            calendarNav.appendChild(installButton);
+            calendarNav.appendChild(this.installButton);
         }
 
-        // Detecta evento de instalação
-        let deferredPrompt;
-        
+        // Evento quando o PWA pode ser instalado
         window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('📱 PWA pode ser instalado');
             e.preventDefault();
-            deferredPrompt = e;
-            installButton.style.display = 'inline-flex';
+            this.deferredPrompt = e;
             
-            installButton.onclick = () => {
-                installButton.style.display = 'none';
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('✅ Usuário aceitou instalação');
-                        this.showClientAlert('App instalado com sucesso!', 'success');
-                    } else {
-                        console.log('❌ Usuário recusou instalação');
-                    }
-                    deferredPrompt = null;
-                });
-            };
+            // Mostra o botão de instalação
+            this.showInstallButton();
+            
+            // Se usuário não instalou após 30 segundos, mostra dica
+            setTimeout(() => {
+                if (this.deferredPrompt && !this.isAppInstalled()) {
+                    this.showInstallPrompt();
+                }
+            }, 30000);
         });
 
-        // Esconde botão se já estiver instalado
+        // Evento quando usuário instala o app
         window.addEventListener('appinstalled', () => {
-            installButton.style.display = 'none';
-            deferredPrompt = null;
-            console.log('📱 App instalado com sucesso!');
+            console.log('✅ App instalado com sucesso!');
+            this.hideInstallButton();
+            this.deferredPrompt = null;
             this.showClientAlert('App instalado com sucesso!', 'success');
         });
 
-        // Esconde botão se não for compatível
-        if (!this.canShowInstallPrompt()) {
-            installButton.style.display = 'none';
+        // Configura o clique do botão
+        this.installButton.addEventListener('click', () => {
+            this.installPWA();
+        });
+
+        // Verifica se já está instalado
+        if (this.isAppInstalled()) {
+            this.hideInstallButton();
         }
     }
 
-    // NOVO: Configura recursos específicos do PWA
+    // Mostra botão de instalação
+    showInstallButton() {
+        if (this.installButton) {
+            this.installButton.style.display = 'inline-flex';
+            this.installButton.style.animation = 'pulse-gentle 2s infinite';
+        }
+    }
+
+    // Esconde botão de instalação
+    hideInstallButton() {
+        if (this.installButton) {
+            this.installButton.style.display = 'none';
+            this.installButton.style.animation = 'none';
+        }
+    }
+
+    // Instala o PWA
+    async installPWA() {
+        if (!this.deferredPrompt) {
+            this.showClientAlert('O app já está instalado ou não pode ser instalado neste dispositivo.', 'info');
+            return;
+        }
+
+        try {
+            this.installButton.innerHTML = '⏳ Instalando...';
+            this.installButton.disabled = true;
+            
+            // Mostra o prompt de instalação
+            this.deferredPrompt.prompt();
+            
+            // Aguarda a decisão do usuário
+            const { outcome } = await this.deferredPrompt.userChoice;
+            
+            if (outcome === 'accepted') {
+                console.log('✅ Usuário aceitou a instalação');
+                this.showClientAlert('App instalado com sucesso!', 'success');
+            } else {
+                console.log('❌ Usuário recusou a instalação');
+                this.showClientAlert('Instalação cancelada. Você pode instalar depois pelo botão "📱 Instalar App".', 'info');
+            }
+            
+            this.deferredPrompt = null;
+            
+        } catch (error) {
+            console.error('❌ Erro na instalação:', error);
+            this.showClientAlert('Erro na instalação. Tente novamente.', 'error');
+        } finally {
+            this.installButton.innerHTML = '📱 Instalar App';
+            this.installButton.disabled = false;
+        }
+    }
+
+    // Verifica se o app já está instalado
+    isAppInstalled() {
+        return window.matchMedia('(display-mode: standalone)').matches || 
+               window.navigator.standalone === true ||
+               document.referrer.includes('android-app://');
+    }
+
+    // Mostra dica de instalação
+    showInstallPrompt() {
+        if (this.deferredPrompt && !this.isAppInstalled()) {
+            const shouldShow = confirm(
+                '💡 **Dica do Catarse Studio**\n\n' +
+                'Gostaria de instalar o app para melhor experiência?\n\n' +
+                '✅ Funciona offline\n' +
+                '✅ Mais rápido\n' +
+                '✅ Acesso direto da tela inicial\n\n' +
+                'Clique em "Instalar App" no topo da página!'
+            );
+            
+            if (shouldShow) {
+                localStorage.setItem('pwa_install_prompt_seen', 'true');
+            }
+        }
+    }
+
+    // Configura recursos específicos do PWA
     setupPWAFeatures() {
-        // Verifica se está rodando como app instalado
-        const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
-                      window.navigator.standalone === true;
+        const isPWA = this.isAppInstalled();
 
         if (isPWA) {
             console.log('🚀 Executando como PWA instalado');
             document.body.classList.add('pwa-mode');
-            
-            // Comportamentos específicos para PWA
-            this.showClientAlert('Modo app ativado!', 'info');
+            this.showClientAlert('Modo app ativado!', 'info', 3000);
         } else {
             console.log('🌐 Executando no navegador');
-            
-            // Mostra dica de instalação após algum tempo de uso
-            setTimeout(() => {
-                this.showPWAInstallPrompt();
-            }, 30000); // 30 segundos
         }
 
-        // Monitora mudanças na conexão para PWA
+        // Monitora mudanças na conexão
         window.addEventListener('online', () => {
             console.log('📡 Conexão restaurada - Sincronizando...');
-            this.showClientAlert('Conexão restaurada! Sincronizando...', 'success');
+            this.showClientAlert('Conexão restaurada! Sincronizando...', 'success', 3000);
             this.forceSync();
         });
 
         window.addEventListener('offline', () => {
             console.log('🔴 Modo offline ativado');
-            this.showClientAlert('Modo offline ativado', 'warning');
+            this.showClientAlert('Modo offline ativado', 'warning', 3000);
         });
     }
 
-    // NOVO: Mostra alerta temporário
-    showClientAlert(message, type) {
-        // Cria alerta temporário se não existir
+    // Mostra alerta temporário
+    showClientAlert(message, type, duration = 4000) {
+        // Remove alerta anterior se existir
         let alertElement = document.getElementById('global-alert');
-        if (!alertElement) {
-            alertElement = document.createElement('div');
-            alertElement.id = 'global-alert';
-            alertElement.style.cssText = `
-                position: fixed;
-                top: 70px;
-                right: 20px;
-                z-index: 2000;
-                min-width: 250px;
-                max-width: 400px;
-            `;
-            document.body.appendChild(alertElement);
+        if (alertElement) {
+            alertElement.remove();
         }
+
+        // Cria novo alerta
+        alertElement = document.createElement('div');
+        alertElement.id = 'global-alert';
+        alertElement.style.cssText = `
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            z-index: 2000;
+            min-width: 250px;
+            max-width: 400px;
+            animation: slideInRight 0.3s ease-out;
+        `;
         
         alertElement.innerHTML = `
             <div class="alert alert-${type}">
@@ -195,32 +273,14 @@ class CatarseApp {
             </div>
         `;
         
+        document.body.appendChild(alertElement);
+        
+        // Remove após o tempo especificado
         setTimeout(() => {
-            if (alertElement) {
+            if (alertElement && alertElement.parentNode) {
                 alertElement.remove();
             }
-        }, 4000);
-    }
-
-    // NOVO: Sugere instalação do PWA
-    showPWAInstallPrompt() {
-        // Só mostra se for compatível com instalação
-        if (this.canShowInstallPrompt() && !this.hasSeenInstallPrompt()) {
-            console.log('💡 Sugerindo instalação do app...');
-            this.showClientAlert('💡 Dica: Instale este app para melhor experiência!', 'info');
-            localStorage.setItem('pwa_install_prompt_seen', 'true');
-        }
-    }
-
-    // NOVO: Verifica se pode mostrar prompt de instalação
-    canShowInstallPrompt() {
-        return 'serviceWorker' in navigator && 
-               'BeforeInstallPromptEvent' in window;
-    }
-
-    // NOVO: Verifica se usuário já viu o prompt
-    hasSeenInstallPrompt() {
-        return localStorage.getItem('pwa_install_prompt_seen') === 'true';
+        }, duration);
     }
 
     setupMenu() {
@@ -262,7 +322,11 @@ class CatarseApp {
         document.querySelectorAll('.nav-link').forEach(link => {
             link.classList.remove('active');
         });
-        event.target.classList.add('active');
+        
+        // Ativar link correspondente
+        document.querySelectorAll(`.nav-link[data-page="${pageId}"]`).forEach(link => {
+            link.classList.add('active');
+        });
 
         // Carregar dados específicos da página
         this.loadPageData(pageId);
