@@ -2,20 +2,20 @@
 // SERVICE WORKER - CATARSE HOME STUDIO PWA
 // =============================================
 
-const CACHE_NAME = 'catarse-studio-v1.2.0';
+const CACHE_NAME = 'catarse-studio-v1.2.1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/css/styles.css',
-  '/js/utils.js',
-  '/js/firebase-sync.js',
-  '/js/calendar.js',
-  '/js/clients.js', 
-  '/js/bookings.js',
-  '/js/reports.js',
-  '/js/audit-log.js',
-  '/js/app.js',
-  '/assets/sua-logo-20-p-cento.png',
+  './',
+  './index.html',
+  './css/styles.css',
+  './js/utils.js',
+  './js/firebase-sync.js',
+  './js/calendar.js',
+  './js/clients.js', 
+  './js/bookings.js',
+  './js/reports.js',
+  './js/audit-log.js',
+  './js/app.js',
+  './assets/sua-logo-20-p-cento.png',
   'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js'
 ];
@@ -93,7 +93,7 @@ self.addEventListener('fetch', (event) => {
           .catch(() => {
             // Fallback para páginas - retorna a página inicial
             if (event.request.destination === 'document') {
-              return caches.match('/index.html');
+              return caches.match('./index.html');
             }
             
             // Fallback para outros recursos
