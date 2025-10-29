@@ -33,6 +33,9 @@ class CatarseApp {
             // Configurar eventos globais
             this.setupGlobalEventListeners();
             this.setupMenu();
+            
+            // NOVO: Botão de instalação PWA
+            this.setupPWAInstallButton();
 
             console.log('✅ Catarse Home Studio inicializado com sucesso!');
             console.log(`📊 ${this.clients.length} clientes | ${this.bookings.length} agendamentos`);
@@ -82,6 +85,58 @@ class CatarseApp {
         this.setupPWAFeatures();
     }
 
+    // NOVO: Botão de instalação PWA
+    setupPWAInstallButton() {
+        // Cria o botão de instalação
+        const installButton = document.createElement('button');
+        installButton.id = 'pwa-install-btn';
+        installButton.className = 'btn btn-info';
+        installButton.innerHTML = '📱 Instalar App';
+        installButton.style.display = 'none';
+        
+        // Adiciona ao header do calendário
+        const calendarNav = document.querySelector('.calendar-nav');
+        if (calendarNav) {
+            calendarNav.appendChild(installButton);
+        }
+
+        // Detecta evento de instalação
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installButton.style.display = 'inline-flex';
+            
+            installButton.onclick = () => {
+                installButton.style.display = 'none';
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('✅ Usuário aceitou instalação');
+                        this.showClientAlert('App instalado com sucesso!', 'success');
+                    } else {
+                        console.log('❌ Usuário recusou instalação');
+                    }
+                    deferredPrompt = null;
+                });
+            };
+        });
+
+        // Esconde botão se já estiver instalado
+        window.addEventListener('appinstalled', () => {
+            installButton.style.display = 'none';
+            deferredPrompt = null;
+            console.log('📱 App instalado com sucesso!');
+            this.showClientAlert('App instalado com sucesso!', 'success');
+        });
+
+        // Esconde botão se não for compatível
+        if (!this.canShowInstallPrompt()) {
+            installButton.style.display = 'none';
+        }
+    }
+
     // NOVO: Configura recursos específicos do PWA
     setupPWAFeatures() {
         // Verifica se está rodando como app instalado
@@ -92,7 +147,8 @@ class CatarseApp {
             console.log('🚀 Executando como PWA instalado');
             document.body.classList.add('pwa-mode');
             
-            // Pode adicionar comportamentos específicos para PWA aqui
+            // Comportamentos específicos para PWA
+            this.showClientAlert('Modo app ativado!', 'info');
         } else {
             console.log('🌐 Executando no navegador');
             
@@ -105,19 +161,45 @@ class CatarseApp {
         // Monitora mudanças na conexão para PWA
         window.addEventListener('online', () => {
             console.log('📡 Conexão restaurada - Sincronizando...');
+            this.showClientAlert('Conexão restaurada! Sincronizando...', 'success');
             this.forceSync();
         });
 
         window.addEventListener('offline', () => {
             console.log('🔴 Modo offline ativado');
-            this.showOfflineNotification();
+            this.showClientAlert('Modo offline ativado', 'warning');
         });
     }
 
-    // NOVO: Mostra notificação de modo offline
-    showOfflineNotification() {
-        // Poderia mostrar um toast/notificação sutil
-        console.log('💡 Modo offline: Dados locais sendo usados');
+    // NOVO: Mostra alerta temporário
+    showClientAlert(message, type) {
+        // Cria alerta temporário se não existir
+        let alertElement = document.getElementById('global-alert');
+        if (!alertElement) {
+            alertElement = document.createElement('div');
+            alertElement.id = 'global-alert';
+            alertElement.style.cssText = `
+                position: fixed;
+                top: 70px;
+                right: 20px;
+                z-index: 2000;
+                min-width: 250px;
+                max-width: 400px;
+            `;
+            document.body.appendChild(alertElement);
+        }
+        
+        alertElement.innerHTML = `
+            <div class="alert alert-${type}">
+                ${message}
+            </div>
+        `;
+        
+        setTimeout(() => {
+            if (alertElement) {
+                alertElement.remove();
+            }
+        }, 4000);
     }
 
     // NOVO: Sugere instalação do PWA
@@ -125,8 +207,8 @@ class CatarseApp {
         // Só mostra se for compatível com instalação
         if (this.canShowInstallPrompt() && !this.hasSeenInstallPrompt()) {
             console.log('💡 Sugerindo instalação do app...');
-            // Aqui poderia mostrar um modal/banner educacional
-            // sobre os benefícios de instalar como app
+            this.showClientAlert('💡 Dica: Instale este app para melhor experiência!', 'info');
+            localStorage.setItem('pwa_install_prompt_seen', 'true');
         }
     }
 
@@ -253,10 +335,10 @@ class CatarseApp {
             this.clientsManager.updateClientStats();
             this.bookingsManager.renderBookingsList();
             
-            alert('Sincronização concluída com sucesso!');
+            this.showClientAlert('Sincronização concluída com sucesso!', 'success');
         } catch (error) {
             console.error('Erro na sincronização:', error);
-            alert('Erro na sincronização. Verifique sua conexão.');
+            this.showClientAlert('Erro na sincronização. Verifique sua conexão.', 'error');
         }
     }
 
@@ -309,13 +391,13 @@ class CatarseApp {
                         this.auditLogManager.renderAuditLog();
                         this.auditLogManager.updateLogStats();
                         
-                        alert('Dados importados com sucesso!');
+                        this.showClientAlert('Dados importados com sucesso!', 'success');
                     }
                 } else {
-                    alert('Arquivo de backup inválido.');
+                    this.showClientAlert('Arquivo de backup inválido.', 'error');
                 }
             } catch (error) {
-                alert('Erro ao importar dados: ' + error.message);
+                this.showClientAlert('Erro ao importar dados: ' + error.message, 'error');
             }
         };
         reader.readAsText(file);
@@ -364,15 +446,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Service Worker para funcionalidade offline (opcional)
+// Service Worker para funcionalidade offline
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/sw.js')
+        navigator.serviceWorker.register('./sw.js')
             .then(function(registration) {
-                console.log('ServiceWorker registrado com sucesso: ', registration.scope);
+                console.log('✅ Service Worker registrado com sucesso:', registration.scope);
             })
             .catch(function(error) {
-                console.log('ServiceWorker falhou: ', error);
+                console.log('❌ Service Worker falhou:', error);
             });
     });
 }
