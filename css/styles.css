@@ -10,6 +10,7 @@
     --info-color: #1976d2;
     --online-color: #4caf50;
     --offline-color: #f44336;
+    --pwa-color: #667eea;
 }
 
 * {
@@ -27,7 +28,13 @@ body {
 
 /* NOVO: Estilo para quando estiver em modo PWA */
 body.pwa-mode {
-    /* Estilos específicos para PWA se necessário */
+    /* Pode adicionar estilos específicos para PWA se necessário */
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+body.pwa-mode .pwa-only {
+    display: block;
 }
 
 .container {
@@ -82,28 +89,45 @@ header {
     align-items: center;
     gap: 6px;
     transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    background-color: rgba(0, 0, 0, 0.8);
 }
 
 .connection-status.online {
-    background-color: var(--online-color);
-    color: white;
+    border: 1px solid var(--online-color);
+    color: var(--online-color);
 }
 
 .connection-status.offline {
-    background-color: var(--offline-color);
-    color: white;
+    border: 1px solid var(--offline-color);
+    color: var(--offline-color);
 }
 
 .connection-status.syncing {
-    background-color: var(--warning-color);
-    color: white;
+    border: 1px solid var(--warning-color);
+    color: var(--warning-color);
+    animation: pulse 1.5s infinite;
 }
 
 .status-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
+}
+
+.connection-status.online .status-dot {
+    background-color: var(--online-color);
     animation: pulse 2s infinite;
+}
+
+.connection-status.offline .status-dot {
+    background-color: var(--offline-color);
+    animation: pulse 2s infinite;
+}
+
+.connection-status.syncing .status-dot {
+    background-color: var(--warning-color);
+    animation: pulse 1s infinite;
 }
 
 @keyframes pulse {
@@ -145,6 +169,12 @@ nav {
     justify-content: center;
     gap: 8px;
     font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.mobile-menu-btn:hover {
+    background: #e04d00;
+    transform: translateY(-1px);
 }
 
 .mobile-menu-content {
@@ -154,6 +184,7 @@ nav {
     background: var(--secondary-color);
     border-radius: 4px;
     padding: 10px;
+    border: 1px solid var(--border-color);
 }
 
 .mobile-menu-content.active {
@@ -165,13 +196,16 @@ nav a {
     text-decoration: none;
     padding: 12px 16px;
     border-radius: 4px;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
     text-align: center;
     display: block;
+    border: 1px solid transparent;
 }
 
 nav a:hover, nav a.active {
     background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    transform: translateY(-1px);
 }
 
 .page {
@@ -180,6 +214,12 @@ nav a:hover, nav a.active {
 
 .page.active {
     display: block;
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .calendar-header {
@@ -191,6 +231,8 @@ nav a:hover, nav a.active {
 
 .calendar-title {
     text-align: center;
+    font-size: 1.5em;
+    color: var(--accent-color);
 }
 
 .calendar-nav {
@@ -206,9 +248,9 @@ nav a:hover, nav a.active {
     color: white;
     border: none;
     padding: 10px 16px;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -216,10 +258,25 @@ nav a:hover, nav a.active {
     text-decoration: none;
     border: none;
     outline: none;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .btn:hover {
     background-color: #e04d00;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
 }
 
 .btn-secondary {
@@ -246,22 +303,54 @@ nav a:hover, nav a.active {
     background-color: var(--info-color);
 }
 
-/* NOVO: Botão de instalação PWA */
+/* ==================== */
+/* BOTÃO DE INSTALAÇÃO PWA - NOVO */
+/* ==================== */
 #pwa-install-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--pwa-color) 0%, #764ba2 100%);
     border: none;
     animation: pulse-gentle 2s infinite;
+    position: relative;
+    overflow: hidden;
+}
+
+#pwa-install-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+#pwa-install-btn:hover::before {
+    left: 100%;
 }
 
 #pwa-install-btn:hover {
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    background: linear-gradient(135deg, #764ba2 0%, var(--pwa-color) 100%);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 @keyframes pulse-gentle {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+    0%, 100% { 
+        transform: scale(1);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    50% { 
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    }
+}
+
+/* Estado de carregamento do botão PWA */
+#pwa-install-btn:disabled {
+    animation: none;
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .calendar {
@@ -274,17 +363,20 @@ nav a:hover, nav a.active {
 .calendar-day {
     background-color: var(--secondary-color);
     padding: 10px 5px;
-    border-radius: 4px;
+    border-radius: 8px;
     text-align: center;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
     min-height: 70px;
     position: relative;
     font-size: 14px;
+    border: 2px solid transparent;
 }
 
 .calendar-day:hover {
     background-color: #444;
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
 }
 
 .calendar-day.other-month {
@@ -293,6 +385,7 @@ nav a:hover, nav a.active {
 
 .calendar-day.has-booking {
     border: 2px solid var(--accent-color);
+    background: linear-gradient(135deg, var(--secondary-color) 0%, #444 100%);
 }
 
 .day-number {
@@ -333,24 +426,29 @@ nav a:hover, nav a.active {
 .time-slot {
     background-color: var(--secondary-color);
     padding: 12px;
-    border-radius: 4px;
+    border-radius: 8px;
     text-align: center;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
     font-size: 14px;
+    border: 2px solid transparent;
 }
 
 .time-slot:hover {
     background-color: #444;
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
 }
 
 .time-slot.booked {
     background-color: #d32f2f;
     cursor: not-allowed;
+    opacity: 0.7;
 }
 
 .time-slot.selected {
     background-color: var(--accent-color);
+    border-color: var(--accent-color);
 }
 
 .form-group {
@@ -362,16 +460,28 @@ label {
     margin-bottom: 6px;
     font-weight: bold;
     font-size: 14px;
+    color: #ddd;
 }
 
 input, select, textarea {
     width: 100%;
-    padding: 10px;
+    padding: 12px;
     background-color: var(--secondary-color);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
     color: var(--text-color);
     font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(255, 85, 0, 0.1);
+}
+
+input:invalid {
+    border-color: var(--error-color);
 }
 
 .form-row {
@@ -386,20 +496,29 @@ input, select, textarea {
 
 .booking-item {
     background-color: var(--secondary-color);
-    padding: 15px;
-    border-radius: 4px;
-    margin-bottom: 10px;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.booking-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    border-color: var(--accent-color);
 }
 
 .booking-info h3 {
-    margin-bottom: 5px;
-    font-size: 16px;
+    margin-bottom: 8px;
+    font-size: 18px;
+    color: var(--accent-color);
 }
 
 .booking-actions {
     display: flex;
     gap: 8px;
-    margin-top: 10px;
+    margin-top: 15px;
     flex-wrap: wrap;
 }
 
@@ -415,66 +534,109 @@ input, select, textarea {
     align-items: center;
     justify-content: center;
     padding: 15px;
+    backdrop-filter: blur(5px);
 }
 
 .modal.active {
     display: flex;
+    animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .modal-content {
     background-color: var(--primary-color);
-    padding: 20px;
-    border-radius: 8px;
+    padding: 24px;
+    border-radius: 12px;
     width: 100%;
     max-width: 500px;
     border: 1px solid var(--border-color);
     max-height: 90vh;
     overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from { 
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+    color: var(--accent-color);
+    margin: 0;
 }
 
 .close-modal {
     background: none;
     border: none;
     color: var(--text-color);
-    font-size: 20px;
+    font-size: 24px;
     cursor: pointer;
     padding: 5px;
     border-radius: 4px;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .close-modal:hover {
     background-color: var(--secondary-color);
+    transform: rotate(90deg);
 }
 
 .alert {
-    padding: 12px;
-    border-radius: 4px;
+    padding: 12px 16px;
+    border-radius: 8px;
     margin-bottom: 15px;
     font-size: 14px;
+    border: 1px solid transparent;
+    font-weight: 500;
 }
 
 .alert-success {
     background-color: var(--success-color);
+    border-color: var(--success-color);
+    color: white;
 }
 
 .alert-error {
     background-color: var(--error-color);
+    border-color: var(--error-color);
+    color: white;
 }
 
 .alert-info {
     background-color: var(--info-color);
+    border-color: var(--info-color);
+    color: white;
 }
 
 .alert-warning {
     background-color: var(--warning-color);
+    border-color: var(--warning-color);
+    color: white;
 }
 
 .report-controls {
@@ -489,10 +651,12 @@ input, select, textarea {
     border-collapse: collapse;
     margin-top: 15px;
     font-size: 14px;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .report-table th, .report-table td {
-    padding: 10px;
+    padding: 12px;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
 }
@@ -500,6 +664,8 @@ input, select, textarea {
 .report-table th {
     background-color: var(--secondary-color);
     cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
 }
 
 .report-table th:hover {
@@ -512,10 +678,13 @@ input, select, textarea {
     display: flex;
     align-items: center;
     gap: 5px;
+    font-weight: 500;
+    transition: all 0.3s ease;
 }
 
 .whatsapp-link:hover {
     text-decoration: underline;
+    transform: translateX(2px);
 }
 
 .day-agendamentos {
@@ -524,40 +693,47 @@ input, select, textarea {
 
 .agendamento-detalhes {
     background-color: var(--secondary-color);
-    padding: 15px;
-    border-radius: 4px;
+    padding: 20px;
+    border-radius: 12px;
     margin-top: 15px;
+    border: 1px solid var(--border-color);
 }
 
 .agendamento-detalhes h3 {
-    margin-bottom: 12px;
+    margin-bottom: 15px;
     color: var(--accent-color);
-    font-size: 18px;
+    font-size: 20px;
+    border-bottom: 2px solid var(--accent-color);
+    padding-bottom: 8px;
 }
 
 .agendamento-info {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-bottom: 15px;
+    gap: 12px;
+    margin-bottom: 20px;
 }
 
 .info-item {
-    margin-bottom: 8px;
+    margin-bottom: 10px;
 }
 
 .info-label {
     font-weight: bold;
     color: #aaa;
     font-size: 14px;
+    margin-bottom: 4px;
 }
 
 .activities-section {
-    margin-top: 15px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
 }
 
 .activities-section textarea {
-    min-height: 80px;
+    min-height: 100px;
+    resize: vertical;
 }
 
 /* NOVOS ESTILOS PARA CLIENTES */
@@ -582,16 +758,24 @@ input, select, textarea {
 
 .stat-card {
     background-color: var(--secondary-color);
-    padding: 15px;
-    border-radius: 4px;
+    padding: 20px;
+    border-radius: 12px;
     text-align: center;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    border-color: var(--accent-color);
 }
 
 .stat-value {
-    font-size: 24px;
+    font-size: 28px;
     font-weight: bold;
     color: var(--accent-color);
-    margin-bottom: 5px;
+    margin-bottom: 8px;
 }
 
 .stat-label {
@@ -614,10 +798,16 @@ input, select, textarea {
 
 .log-entry {
     background-color: var(--secondary-color);
-    padding: 12px;
-    border-radius: 4px;
-    margin-bottom: 8px;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 10px;
     border-left: 4px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.log-entry:hover {
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .log-entry.create {
@@ -640,14 +830,15 @@ input, select, textarea {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
 }
 
 .log-action {
     font-weight: bold;
-    padding: 2px 8px;
+    padding: 4px 12px;
     border-radius: 12px;
     font-size: 12px;
+    color: white;
 }
 
 .log-action.create {
@@ -701,14 +892,35 @@ input, select, textarea {
 .loading {
     opacity: 0.6;
     pointer-events: none;
+    position: relative;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .validation-status {
     margin-top: 5px;
     font-size: 12px;
-    padding: 4px 8px;
+    padding: 6px 10px;
     border-radius: 4px;
     display: inline-block;
+    font-weight: 500;
 }
 
 .validation-valid {
@@ -727,16 +939,23 @@ input, select, textarea {
     overflow-y: auto;
     margin: 15px 0;
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: 8px;
     padding: 10px;
+    background: var(--secondary-color);
 }
 
 .duplicate-client-item {
-    background-color: var(--secondary-color);
-    padding: 12px;
-    border-radius: 4px;
-    margin-bottom: 8px;
+    background-color: var(--primary-color);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
     border-left: 4px solid var(--warning-color);
+    transition: all 0.3s ease;
+}
+
+.duplicate-client-item:hover {
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .duplicate-client-item:last-child {
@@ -746,7 +965,7 @@ input, select, textarea {
 .duplicate-client-item .client-info {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 8px;
 }
 
 .duplicate-client-item .client-info strong {
@@ -761,10 +980,11 @@ input, select, textarea {
 
 .duplicate-client-item .match-type {
     font-size: 12px;
-    padding: 2px 8px;
+    padding: 4px 10px;
     border-radius: 12px;
     display: inline-block;
     width: fit-content;
+    font-weight: 600;
 }
 
 .duplicate-client-item .match-type.cpf_exato {
@@ -799,6 +1019,7 @@ input, select, textarea {
     text-align: center;
     padding: 12px;
     font-size: 14px;
+    font-weight: 600;
 }
 
 .modal-body {
@@ -811,9 +1032,10 @@ input, select, textarea {
     top: 70px;
     right: 20px;
     z-index: 2000;
-    min-width: 250px;
+    min-width: 300px;
     max-width: 400px;
     animation: slideInRight 0.3s ease-out;
+    backdrop-filter: blur(10px);
 }
 
 @keyframes slideInRight {
@@ -940,5 +1162,45 @@ input, select, textarea {
         right: 10px;
         left: 10px;
         max-width: none;
+    }
+
+    .calendar-nav {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .calendar-nav .btn {
+        justify-content: center;
+    }
+}
+
+/* Melhorias de acessibilidade */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    :root {
+        --border-color: #fff;
+    }
+    
+    .btn {
+        border: 2px solid currentColor;
+    }
+}
+
+/* Dark mode refinements */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #0a0a0a;
+    }
+    
+    .modal-content {
+        background-color: #1a1a1a;
     }
 }
