@@ -25,6 +25,11 @@ body {
     min-height: 100vh;
 }
 
+/* NOVO: Estilo para quando estiver em modo PWA */
+body.pwa-mode {
+    /* Estilos específicos para PWA se necessário */
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -193,6 +198,7 @@ nav a:hover, nav a.active {
     gap: 10px;
     justify-content: center;
     flex-wrap: wrap;
+    align-items: center;
 }
 
 .btn {
@@ -207,6 +213,9 @@ nav a:hover, nav a.active {
     align-items: center;
     gap: 5px;
     font-size: 14px;
+    text-decoration: none;
+    border: none;
+    outline: none;
 }
 
 .btn:hover {
@@ -235,6 +244,24 @@ nav a:hover, nav a.active {
 
 .btn-info {
     background-color: var(--info-color);
+}
+
+/* NOVO: Botão de instalação PWA */
+#pwa-install-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    animation: pulse-gentle 2s infinite;
+}
+
+#pwa-install-btn:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+@keyframes pulse-gentle {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
 }
 
 .calendar {
@@ -418,6 +445,13 @@ input, select, textarea {
     color: var(--text-color);
     font-size: 20px;
     cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.close-modal:hover {
+    background-color: var(--secondary-color);
 }
 
 .alert {
@@ -771,6 +805,28 @@ input, select, textarea {
     padding: 10px 0;
 }
 
+/* NOVO: Alertas globais flutuantes */
+#global-alert {
+    position: fixed;
+    top: 70px;
+    right: 20px;
+    z-index: 2000;
+    min-width: 250px;
+    max-width: 400px;
+    animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
 /* Desktop */
 @media (min-width: 768px) {
     .header-content {
@@ -878,5 +934,11 @@ input, select, textarea {
 
     .duplicate-actions {
         flex-direction: column;
+    }
+
+    #global-alert {
+        right: 10px;
+        left: 10px;
+        max-width: none;
     }
 }
