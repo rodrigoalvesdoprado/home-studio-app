@@ -23,7 +23,7 @@ class BookingsManager {
         
         // Ações de agendamento
         document.getElementById('edit-booking-btn').addEventListener('click', () => this.editBooking());
-        document.getElementById('delete-booking-btn').addEventListener('click', () => this.deleteBooking();
+        document.getElementById('delete-booking-btn').addEventListener('click', () => this.deleteBooking());
     }
 
     setupModals() {
