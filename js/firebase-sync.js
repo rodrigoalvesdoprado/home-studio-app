@@ -21,7 +21,10 @@ class FirebaseSync {
             appId: "1:459212604797:web:4a3f402028d367a5673814"
         };
 
-        firebase.initializeApp(firebaseConfig);
+        // Verifica se o Firebase já foi inicializado
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         this.db = firebase.firestore();
     }
 
