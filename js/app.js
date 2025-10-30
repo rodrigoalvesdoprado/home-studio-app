@@ -8,6 +8,7 @@ class CatarseApp {
         this.clients = JSON.parse(localStorage.getItem('studio_clients')) || [];
         this.bookings = JSON.parse(localStorage.getItem('studio_bookings')) || [];
         this.auditLog = JSON.parse(localStorage.getItem('studio_audit_log')) || [];
+        this.services = JSON.parse(localStorage.getItem('studio_services')) || [];
         
         // Controle de instalação PWA
         this.deferredPrompt = null;
@@ -31,6 +32,7 @@ class CatarseApp {
             this.calendar = new CalendarManager(this);
             this.clientsManager = new ClientsManager(this);
             this.bookingsManager = new BookingsManager(this);
+            this.servicesManager = new ServicesManager(this); // NOVO
             this.reportsManager = new ReportsManager(this);
             this.auditLogManager = new AuditLogManager(this);
 
@@ -42,7 +44,7 @@ class CatarseApp {
             this.setupPWAInstallButton();
 
             console.log('✅ Catarse Home Studio inicializado com sucesso!');
-            console.log(`📊 ${this.clients.length} clientes | ${this.bookings.length} agendamentos`);
+            console.log(`📊 ${this.clients.length} clientes | ${this.bookings.length} agendamentos | ${this.services.length} serviços`);
 
         } catch (error) {
             console.error('❌ Erro na inicialização do app:', error);
@@ -341,6 +343,9 @@ class CatarseApp {
             case 'bookings':
                 this.bookingsManager.renderBookingsList();
                 break;
+            case 'services': // NOVO
+                this.servicesManager.renderServicesList();
+                break;
             case 'reports':
                 this.reportsManager.generateReport();
                 break;
@@ -377,6 +382,19 @@ class CatarseApp {
         this.bookingsManager.saveCompletedActivities(bookingId);
     }
 
+    // Métodos para ServicesManager - NOVOS
+    editService(serviceId) {
+        this.servicesManager.editService(serviceId);
+    }
+
+    deleteService(serviceId) {
+        this.servicesManager.deleteService(serviceId);
+    }
+
+    toggleService(serviceId) {
+        this.servicesManager.toggleService(serviceId);
+    }
+
     // Métodos para AuditLogManager
     logAction(action, entity, entityId, details = {}) {
         this.auditLogManager.logAction(action, entity, entityId, details);
@@ -392,12 +410,14 @@ class CatarseApp {
             // Atualizar dados locais após sync
             this.clients = JSON.parse(localStorage.getItem('studio_clients')) || [];
             this.bookings = JSON.parse(localStorage.getItem('studio_bookings')) || [];
+            this.services = JSON.parse(localStorage.getItem('studio_services')) || []; // NOVO
             
             // Atualizar visualizações
             this.calendar.refresh();
             this.clientsManager.renderClientsList();
             this.clientsManager.updateClientStats();
             this.bookingsManager.renderBookingsList();
+            this.servicesManager.renderServicesList(); // NOVO
             
             this.showClientAlert('Sincronização concluída com sucesso!', 'success');
         } catch (error) {
@@ -410,9 +430,10 @@ class CatarseApp {
         const data = {
             clients: this.clients,
             bookings: this.bookings,
+            services: this.services, // NOVO
             auditLog: this.auditLog,
             exportDate: new Date().toISOString(),
-            version: '1.0'
+            version: '1.1' // Atualizada versão
         };
         
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -436,15 +457,18 @@ class CatarseApp {
                     if (confirm('Isso substituirá todos os dados atuais. Continuar?')) {
                         this.clients = data.clients;
                         this.bookings = data.bookings;
+                        this.services = data.services || []; // NOVO - compatibilidade com versões antigas
                         this.auditLog = data.auditLog || [];
                         
                         localStorage.setItem('studio_clients', JSON.stringify(this.clients));
                         localStorage.setItem('studio_bookings', JSON.stringify(this.bookings));
+                        localStorage.setItem('studio_services', JSON.stringify(this.services)); // NOVO
                         localStorage.setItem('studio_audit_log', JSON.stringify(this.auditLog));
                         
                         // Sincronizar com Firebase
                         this.clients.forEach(client => this.firebaseSync.saveClient(client));
                         this.bookings.forEach(booking => this.firebaseSync.saveBooking(booking));
+                        this.services.forEach(service => this.firebaseSync.saveService(service)); // NOVO
                         this.auditLog.forEach(log => this.firebaseSync.saveAuditLog(log));
                         
                         // Atualizar todas as visualizações
@@ -452,6 +476,7 @@ class CatarseApp {
                         this.clientsManager.renderClientsList();
                         this.clientsManager.updateClientStats();
                         this.bookingsManager.renderBookingsList();
+                        this.servicesManager.renderServicesList(); // NOVO
                         this.auditLogManager.renderAuditLog();
                         this.auditLogManager.updateLogStats();
                         
@@ -479,8 +504,17 @@ class CatarseApp {
         return this.bookings;
     }
 
+    getServices() { // NOVO
+        return this.services;
+    }
+
     getAuditLog() {
         return this.auditLog;
+    }
+
+    // NOVO: Método para obter serviços ativos
+    getActiveServices() {
+        return this.services.filter(service => service.enabled);
     }
 }
 
