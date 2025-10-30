@@ -87,6 +87,7 @@ class FirebaseSync {
             
             await this.syncClients();
             await this.syncBookings();
+            await this.syncServices(); // NOVO
             await this.syncAuditLogs();
             
             localStorage.setItem('last_sync', new Date().toISOString());
@@ -145,6 +146,33 @@ class FirebaseSync {
             return mergedBookings;
         } catch (error) {
             console.error('❌ Erro ao sincronizar agendamentos:', error);
+            throw error;
+        }
+    }
+
+    // NOVO: Sincronização de serviços
+    async syncServices() {
+        try {
+            const snapshot = await this.db.collection('servicos').get();
+            const firebaseServices = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            const localServices = JSON.parse(localStorage.getItem('studio_services')) || [];
+            const mergedServices = this.mergeData(localServices, firebaseServices, 'servicos');
+            
+            localStorage.setItem('studio_services', JSON.stringify(mergedServices));
+            
+            const localUpdates = this.getLocalUpdates(localServices, firebaseServices, 'servicos');
+            for (const service of localUpdates) {
+                await this.db.collection('servicos').doc(service.id).set(service, { merge: true });
+            }
+
+            console.log(`✅ Serviços sincronizados: ${mergedServices.length} serviços`);
+            return mergedServices;
+        } catch (error) {
+            console.error('❌ Erro ao sincronizar serviços:', error);
             throw error;
         }
     }
@@ -290,6 +318,32 @@ class FirebaseSync {
         }
     }
 
+    // NOVO: Método para salvar serviço
+    async saveService(service) {
+        try {
+            let services = JSON.parse(localStorage.getItem('studio_services')) || [];
+            const index = services.findIndex(s => s.id === service.id);
+            
+            if (index === -1) {
+                services.push(service);
+            } else {
+                services[index] = service;
+            }
+            
+            localStorage.setItem('studio_services', JSON.stringify(services));
+            
+            if (this.isOnline) {
+                await this.db.collection('servicos').doc(service.id).set(service, { merge: true });
+            }
+            
+            console.log(`💾 Serviço salvo: ${service.name}`);
+            return service;
+        } catch (error) {
+            console.error('❌ Erro ao salvar serviço:', error);
+            throw error;
+        }
+    }
+
     async saveAuditLog(log) {
         try {
             let logs = JSON.parse(localStorage.getItem('studio_audit_log')) || [];
@@ -342,6 +396,25 @@ class FirebaseSync {
             return true;
         } catch (error) {
             console.error('❌ Erro ao excluir agendamento:', error);
+            throw error;
+        }
+    }
+
+    // NOVO: Método para excluir serviço
+    async deleteService(serviceId) {
+        try {
+            let services = JSON.parse(localStorage.getItem('studio_services')) || [];
+            services = services.filter(s => s.id !== serviceId);
+            localStorage.setItem('studio_services', JSON.stringify(services));
+            
+            if (this.isOnline) {
+                await this.db.collection('servicos').doc(serviceId).delete();
+            }
+            
+            console.log(`🗑️ Serviço excluído: ${serviceId}`);
+            return true;
+        } catch (error) {
+            console.error('❌ Erro ao excluir serviço:', error);
             throw error;
         }
     }
