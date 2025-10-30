@@ -47,6 +47,7 @@
                             <a href="#" class="nav-link" data-page="clients">Clientes</a>
                             <a href="#" class="nav-link" data-page="bookings">Agendamentos</a>
                             <a href="#" class="nav-link" data-page="services">Serviços</a>
+                            <a href="#" class="nav-link" data-page="finance">Financeiro</a>
                             <a href="#" class="nav-link" data-page="reports">Relatórios</a>
                             <a href="#" class="nav-link" data-page="audit">Log do Sistema</a>
                         </div>
@@ -61,6 +62,7 @@
                                 <a href="#" class="nav-link" data-page="clients">Clientes</a>
                                 <a href="#" class="nav-link" data-page="bookings">Agendamentos</a>
                                 <a href="#" class="nav-link" data-page="services">Serviços</a>
+                                <a href="#" class="nav-link" data-page="finance">Financeiro</a>
                                 <a href="#" class="nav-link" data-page="reports">Relatórios</a>
                                 <a href="#" class="nav-link" data-page="audit">Log do Sistema</a>
                             </div>
@@ -274,8 +276,130 @@
                 <!-- Serviços serão gerados via JavaScript -->
             </div>
         </section>
+
+        <!-- NOVA PÁGINA: Controle Financeiro -->
+        <section id="finance" class="page">
+            <h2>Controle Financeiro</h2>
+            
+            <div class="alert alert-info">
+                <strong>💼 Relatório Financeiro Completo</strong><br>
+                Acompanhe a receita gerada pelos agendamentos e serviços prestados.
+            </div>
+
+            <!-- Filtros do Relatório Financeiro -->
+            <div class="finance-filters">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="finance-start-date">Data Inicial:</label>
+                        <input type="date" id="finance-start-date">
+                    </div>
+                    <div class="form-group">
+                        <label for="finance-end-date">Data Final:</label>
+                        <input type="date" id="finance-end-date">
+                    </div>
+                    <div class="form-group">
+                        <label for="finance-client-filter">Cliente:</label>
+                        <select id="finance-client-filter">
+                            <option value="">Todos os clientes</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="finance-service-filter">Serviço:</label>
+                        <select id="finance-service-filter">
+                            <option value="all">Todos os serviços</option>
+                            <option value="ensaio">Ensaio</option>
+                            <option value="gravação">Gravação</option>
+                            <option value="mixagem">Mixagem</option>
+                            <option value="masterização">Masterização</option>
+                            <option value="vídeo">Vídeo</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="finance-controls">
+                    <button class="btn" id="generate-finance-report">
+                        📊 Gerar Relatório
+                    </button>
+                    <button class="btn btn-secondary" id="clear-finance-filters">
+                        🗑️ Limpar Filtros
+                    </button>
+                    <button class="btn btn-info" id="export-finance-data">
+                        📤 Exportar CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- Estatísticas Financeiras -->
+            <div class="finance-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-revenue">R$ 0</div>
+                    <div class="stat-label">Receita Total</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-bookings">0</div>
+                    <div class="stat-label">Total de Agendamentos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-hours">0h</div>
+                    <div class="stat-label">Horas Totais</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avg-revenue">R$ 0</div>
+                    <div class="stat-label">Média por Agendamento</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="unique-clients">0</div>
+                    <div class="stat-label">Clientes Únicos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="top-service">N/A</div>
+                    <div class="stat-label">Serviço Mais Rentável</div>
+                </div>
+            </div>
+
+            <!-- Tabela de Agendamentos Financeiros -->
+            <div style="overflow-x: auto; margin-top: 20px;">
+                <table class="finance-table">
+                    <thead>
+                        <tr>
+                            <th data-sort="date" style="width: 120px;">Data/Horário ▲</th>
+                            <th data-sort="client" style="width: 200px;">Cliente ▲</th>
+                            <th data-sort="services" style="width: 250px;">Serviços Contratados ▲</th>
+                            <th data-sort="duration" style="width: 80px;">Duração ▲</th>
+                            <th data-sort="revenue" style="width: 120px;">Valor (R$) ▲</th>
+                            <th style="width: 150px;">Observações</th>
+                            <th style="width: 100px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="finance-body">
+                        <!-- Dados financeiros serão gerados via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Resumo do Período -->
+            <div class="period-summary" style="margin-top: 30px; padding: 20px; background: var(--secondary-color); border-radius: 12px;">
+                <h3 style="color: var(--accent-color); margin-bottom: 15px;">📈 Resumo do Período</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="summary-period">Período para Análise:</label>
+                        <select id="summary-period" onchange="app.financeManager.generateFinanceReport()">
+                            <option value="current_month">Este Mês</option>
+                            <option value="last_month">Mês Anterior</option>
+                            <option value="current_quarter">Este Trimestre</option>
+                            <option value="last_quarter">Trimestre Anterior</option>
+                            <option value="current_year">Este Ano</option>
+                            <option value="custom">Personalizado</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="period-stats">
+                    <!-- Estatísticas do período serão geradas via JavaScript -->
+                </div>
+            </div>
+        </section>
         
-        <!-- Página de Relatórios -->
+        <!-- Página de Relatórios (antiga) -->
         <section id="reports" class="page">
             <h2>Relatório de Horas por Cliente</h2>
             
@@ -470,6 +594,7 @@
     <script src="js/clients.js"></script>
     <script src="js/bookings.js"></script>
     <script src="js/services.js"></script>
+    <script src="js/finance.js"></script>
     <script src="js/reports.js"></script>
     <script src="js/audit-log.js"></script>
     <script src="js/app.js"></script>
