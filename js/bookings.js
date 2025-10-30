@@ -7,6 +7,7 @@ class BookingsManager {
         this.app = app;
         this.editingBookingId = null;
         this.selectedBookingId = null;
+        this.selectedServices = []; // NOVO: Array para serviços selecionados
         this.init();
     }
 
@@ -22,7 +23,7 @@ class BookingsManager {
         
         // Ações de agendamento
         document.getElementById('edit-booking-btn').addEventListener('click', () => this.editBooking());
-        document.getElementById('delete-booking-btn').addEventListener('click', () => this.deleteBooking());
+        document.getElementById('delete-booking-btn').addEventListener('click', () => this.deleteBooking();
     }
 
     setupModals() {
@@ -51,6 +52,10 @@ class BookingsManager {
         const notes = document.getElementById('booking-notes').value;
         const bookingId = document.getElementById('booking-id').value;
         
+        // NOVO: Obter serviços selecionados e calcular total
+        const selectedServices = this.getSelectedServices();
+        const totalRevenue = this.calculateTotalRevenue(selectedServices, duration);
+        
         // Validações
         if (!clientId) {
             alert('Por favor, selecione um cliente.');
@@ -59,6 +64,12 @@ class BookingsManager {
         
         if (!startTime) {
             alert('Por favor, selecione um horário de início.');
+            return;
+        }
+
+        // NOVO: Validação de serviços
+        if (selectedServices.length === 0) {
+            alert('Por favor, selecione pelo menos um serviço.');
             return;
         }
         
@@ -104,6 +115,8 @@ class BookingsManager {
                     clientDocument: client.document,
                     clientPhone: client.phone,
                     notes,
+                    services: selectedServices, // NOVO
+                    totalRevenue: totalRevenue, // NOVO
                     updatedAt: new Date().toISOString()
                 };
                 
@@ -115,6 +128,8 @@ class BookingsManager {
                     date: date,
                     startTime: startTime,
                     duration: duration,
+                    services: selectedServices.map(s => s.serviceName).join(', '),
+                    totalRevenue: totalRevenue,
                     oldDate: oldBooking.date,
                     oldStartTime: oldBooking.startTime,
                     oldDuration: oldBooking.duration
@@ -132,6 +147,8 @@ class BookingsManager {
                 clientDocument: client.document,
                 clientPhone: client.phone,
                 notes,
+                services: selectedServices, // NOVO
+                totalRevenue: totalRevenue, // NOVO
                 activitiesCompleted: '',
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
@@ -144,7 +161,9 @@ class BookingsManager {
                 clientName: client.artisticName,
                 date: date,
                 startTime: startTime,
-                duration: duration
+                duration: duration,
+                services: selectedServices.map(s => s.serviceName).join(', '),
+                totalRevenue: totalRevenue
             });
         }
         
@@ -153,6 +172,35 @@ class BookingsManager {
         this.app.calendar.refresh();
         this.renderBookingsList();
         this.resetBookingForm();
+    }
+
+    // NOVO: Obter serviços selecionados
+    getSelectedServices() {
+        const selectedServices = [];
+        const serviceCheckboxes = document.querySelectorAll('.service-checkbox input[type="checkbox"]:checked');
+        
+        serviceCheckboxes.forEach(checkbox => {
+            const serviceId = checkbox.getAttribute('data-service-id');
+            const service = this.app.servicesManager.getServiceById(serviceId);
+            
+            if (service && service.enabled) {
+                selectedServices.push({
+                    serviceId: service.id,
+                    serviceName: service.name,
+                    pricePerHour: service.pricePerHour,
+                    hours: parseInt(document.getElementById('booking-duration').value) || 1
+                });
+            }
+        });
+        
+        return selectedServices;
+    }
+
+    // NOVO: Calcular receita total
+    calculateTotalRevenue(services, duration) {
+        return services.reduce((total, service) => {
+            return total + (service.pricePerHour * duration);
+        }, 0);
     }
 
     isTimeSlotBooked(booking, hour) {
@@ -198,6 +246,9 @@ class BookingsManager {
                 bookingStartSelect.appendChild(option);
             }
         }
+
+        // NOVO: Renderizar serviços disponíveis
+        this.renderAvailableServices(bookingId);
         
         // Se estamos editando, preenche os outros campos
         if (bookingId) {
@@ -207,6 +258,17 @@ class BookingsManager {
                 bookingStartSelect.value = booking.startTime;
                 document.getElementById('booking-duration').value = booking.duration;
                 document.getElementById('booking-notes').value = booking.notes || '';
+                
+                // NOVO: Preencher serviços selecionados
+                if (booking.services && booking.services.length > 0) {
+                    booking.services.forEach(service => {
+                        const checkbox = document.querySelector(`input[data-service-id="${service.serviceId}"]`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                        }
+                    });
+                    this.updateServicesSummary();
+                }
                 
                 document.getElementById('booking-submit-btn').textContent = 'Atualizar Agendamento';
                 document.getElementById('booking-cancel-btn').style.display = 'inline-block';
@@ -219,6 +281,96 @@ class BookingsManager {
         }
         
         document.getElementById('booking-modal').classList.add('active');
+    }
+
+    // NOVO: Renderizar serviços disponíveis
+    renderAvailableServices(bookingId = null) {
+        const servicesContainer = document.getElementById('booking-services-container');
+        if (!servicesContainer) {
+            this.createServicesSection();
+        }
+        
+        const servicesList = document.getElementById('booking-services-list');
+        servicesList.innerHTML = '';
+        
+        const enabledServices = this.app.servicesManager.getEnabledServices();
+        
+        if (enabledServices.length === 0) {
+            servicesList.innerHTML = '<p style="color: #aaa; text-align: center;">Nenhum serviço disponível. Cadastre serviços primeiro.</p>';
+            document.getElementById('services-summary').style.display = 'none';
+            return;
+        }
+        
+        enabledServices.forEach(service => {
+            const serviceElement = document.createElement('div');
+            serviceElement.className = 'service-checkbox';
+            serviceElement.innerHTML = `
+                <input type="checkbox" id="service-${service.id}" 
+                       data-service-id="${service.id}" 
+                       data-price="${service.pricePerHour}">
+                <label for="service-${service.id}">
+                    ${service.name} (R$ ${service.pricePerHour}/h)
+                </label>
+            `;
+            servicesList.appendChild(serviceElement);
+        });
+
+        // NOVO: Adicionar event listeners para os checkboxes
+        setTimeout(() => {
+            document.querySelectorAll('.service-checkbox input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', () => this.updateServicesSummary());
+            });
+        }, 100);
+
+        // NOVO: Event listener para mudança de duração
+        document.getElementById('booking-duration').addEventListener('change', () => {
+            this.updateServicesSummary();
+        });
+
+        this.updateServicesSummary();
+    }
+
+    // NOVO: Criar seção de serviços no modal
+    createServicesSection() {
+        const form = document.getElementById('booking-form');
+        const durationField = document.getElementById('booking-duration').parentNode;
+        
+        const servicesSection = document.createElement('div');
+        servicesSection.className = 'form-group';
+        servicesSection.innerHTML = `
+            <label>Serviços Contratados</label>
+            <div id="booking-services-container">
+                <div id="booking-services-list" class="services-checkbox-list">
+                    <!-- Serviços serão renderizados aqui -->
+                </div>
+                <div id="services-summary" class="services-summary">
+                    <strong>Total: R$ <span id="services-total">0</span></strong>
+                    <br><small>Duração: <span id="services-duration">1</span> hora(s)</small>
+                </div>
+            </div>
+        `;
+        
+        durationField.parentNode.insertBefore(servicesSection, durationField.nextSibling);
+    }
+
+    // NOVO: Atualizar resumo dos serviços
+    updateServicesSummary() {
+        const duration = parseInt(document.getElementById('booking-duration').value) || 1;
+        const selectedServices = this.getSelectedServices();
+        const total = this.calculateTotalRevenue(selectedServices, duration);
+        
+        document.getElementById('services-total').textContent = total.toFixed(2);
+        document.getElementById('services-duration').textContent = duration;
+        
+        // Atualizar estilo do resumo baseado no total
+        const summary = document.getElementById('services-summary');
+        if (total > 0) {
+            summary.style.display = 'block';
+            summary.style.color = 'var(--success-color)';
+        } else {
+            summary.style.display = 'block';
+            summary.style.color = 'var(--text-color)';
+        }
     }
 
     viewBookingDetails(bookingId) {
@@ -235,6 +387,27 @@ class BookingsManager {
         const dateObj = new Date(booking.date);
         const formattedDate = dateObj.toLocaleDateString('pt-BR');
         const whatsappLink = `https://wa.me/55${booking.clientPhone.replace(/\D/g, '')}?text=Olá ${encodeURIComponent(booking.clientName)}! Vi que você tem um agendamento conosco.`;
+        
+        // NOVO: Gerar HTML para serviços
+        let servicesHTML = '';
+        if (booking.services && booking.services.length > 0) {
+            servicesHTML = `
+                <div class="services-section">
+                    <h4>Serviços Contratados</h4>
+                    <div class="services-list">
+                        ${booking.services.map(service => `
+                            <div class="service-item">
+                                <strong>${service.serviceName}</strong>
+                                <br>R$ ${service.pricePerHour}/h × ${service.hours}h = R$ ${(service.pricePerHour * service.hours).toFixed(2)}
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="revenue-total" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-color);">
+                        <strong>Total: R$ ${booking.totalRevenue?.toFixed(2) || '0.00'}</strong>
+                    </div>
+                </div>
+            `;
+        }
         
         const bookingDetailsContent = document.getElementById('booking-details-content');
         bookingDetailsContent.innerHTML = `
@@ -263,6 +436,8 @@ class BookingsManager {
                         <div>${booking.startTime} - ${endTime} (${booking.duration}h)</div>
                     </div>
                 </div>
+                
+                ${servicesHTML}
                 
                 <div class="activities-section">
                     <h4>Atividades Planejadas</h4>
@@ -324,7 +499,8 @@ class BookingsManager {
             this.app.logAction('delete', 'booking', this.selectedBookingId, {
                 clientName: booking.clientName,
                 date: booking.date,
-                startTime: booking.startTime
+                startTime: booking.startTime,
+                totalRevenue: booking.totalRevenue
             });
             
             this.closeModals();
@@ -362,6 +538,16 @@ class BookingsManager {
             const endTime = Utils.calculateEndTime(booking.startTime, booking.duration);
             const whatsappLink = `https://wa.me/55${booking.clientPhone.replace(/\D/g, '')}?text=Olá ${encodeURIComponent(booking.clientName)}! Vi que você tem um agendamento conosco.`;
             
+            // NOVO: Informações de serviços no card
+            let servicesInfo = '';
+            if (booking.services && booking.services.length > 0) {
+                const servicesList = booking.services.map(s => s.serviceName).join(', ');
+                servicesInfo = `<p><strong>Serviços:</strong> ${servicesList}</p>`;
+                if (booking.totalRevenue) {
+                    servicesInfo += `<p><strong>Valor:</strong> R$ ${booking.totalRevenue.toFixed(2)}</p>`;
+                }
+            }
+            
             bookingElement.innerHTML = `
                 <div class="booking-info">
                     <h3>${booking.clientName}</h3>
@@ -369,6 +555,7 @@ class BookingsManager {
                     <p>Horário: ${booking.startTime} - ${endTime} (${booking.duration}h)</p>
                     <p>Documento: ${booking.clientDocument}</p>
                     <p>Telefone: <a href="${whatsappLink}" target="_blank" class="whatsapp-link">${booking.clientPhone}</a></p>
+                    ${servicesInfo}
                     ${booking.notes ? `<p>Atividade: ${booking.notes}</p>` : ''}
                 </div>
                 <div class="booking-actions">
@@ -385,6 +572,15 @@ class BookingsManager {
         document.getElementById('booking-submit-btn').textContent = 'Confirmar Agendamento';
         document.getElementById('booking-cancel-btn').style.display = 'none';
         this.editingBookingId = null;
+        
+        // NOVO: Limpar serviços selecionados
+        const servicesContainer = document.getElementById('booking-services-container');
+        if (servicesContainer) {
+            document.querySelectorAll('.service-checkbox input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            this.updateServicesSummary();
+        }
     }
 
     closeModals() {
