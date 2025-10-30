@@ -267,11 +267,11 @@ class ServicesManager {
                     <p><strong>Última atualização:</strong> ${updatedAt}</p>
                 </div>
                 <div class="booking-actions">
-                    <button class="btn btn-warning" onclick="app.servicesManager.editService('${service.id}')">Editar</button>
-                    <button class="btn ${service.enabled ? 'btn-secondary' : 'btn-success'}" onclick="app.servicesManager.toggleService('${service.id}')">
+                    <button class="btn btn-warning" onclick="app.editService('${service.id}')">Editar</button>
+                    <button class="btn ${service.enabled ? 'btn-secondary' : 'btn-success'}" onclick="app.toggleService('${service.id}')">
                         ${service.enabled ? 'Desativar' : 'Ativar'}
                     </button>
-                    <button class="btn btn-error" onclick="app.servicesManager.deleteService('${service.id}')">Excluir</button>
+                    <button class="btn btn-error" onclick="app.deleteService('${service.id}')">Excluir</button>
                 </div>
             `;
             servicesList.appendChild(serviceElement);
