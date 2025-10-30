@@ -24,7 +24,7 @@ class Utils {
 
     static formatCEP(cep) {
         cep = cep.replace(/\D/g, '');
-        return cpf.replace(/(\d{5})(\d{3})/, "$1-$2");
+        return cep.replace(/(\d{5})(\d{3})/, "$1-$2");
     }
 
     // NOVAS FUNÇÕES PARA CONTROLE DE DUPLICATAS
