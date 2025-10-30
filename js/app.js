@@ -32,7 +32,8 @@ class CatarseApp {
             this.calendar = new CalendarManager(this);
             this.clientsManager = new ClientsManager(this);
             this.bookingsManager = new BookingsManager(this);
-            this.servicesManager = new ServicesManager(this); // NOVO
+            this.servicesManager = new ServicesManager(this);
+            this.financeManager = new FinanceManager(this); // NOVO - Fase 3
             this.reportsManager = new ReportsManager(this);
             this.auditLogManager = new AuditLogManager(this);
 
@@ -343,8 +344,11 @@ class CatarseApp {
             case 'bookings':
                 this.bookingsManager.renderBookingsList();
                 break;
-            case 'services': // NOVO
+            case 'services':
                 this.servicesManager.renderServicesList();
+                break;
+            case 'finance': // NOVO - Fase 3
+                this.financeManager.generateFinanceReport();
                 break;
             case 'reports':
                 this.reportsManager.generateReport();
@@ -382,7 +386,7 @@ class CatarseApp {
         this.bookingsManager.saveCompletedActivities(bookingId);
     }
 
-    // Métodos para ServicesManager - NOVOS
+    // Métodos para ServicesManager
     editService(serviceId) {
         this.servicesManager.editService(serviceId);
     }
@@ -393,6 +397,19 @@ class CatarseApp {
 
     toggleService(serviceId) {
         this.servicesManager.toggleService(serviceId);
+    }
+
+    // Métodos para FinanceManager - NOVOS (Fase 3)
+    generateFinanceReport() {
+        this.financeManager.generateFinanceReport();
+    }
+
+    exportFinanceData() {
+        this.financeManager.exportFinanceData();
+    }
+
+    clearFinanceFilters() {
+        this.financeManager.clearFilters();
     }
 
     // Métodos para AuditLogManager
@@ -410,14 +427,15 @@ class CatarseApp {
             // Atualizar dados locais após sync
             this.clients = JSON.parse(localStorage.getItem('studio_clients')) || [];
             this.bookings = JSON.parse(localStorage.getItem('studio_bookings')) || [];
-            this.services = JSON.parse(localStorage.getItem('studio_services')) || []; // NOVO
+            this.services = JSON.parse(localStorage.getItem('studio_services')) || [];
             
             // Atualizar visualizações
             this.calendar.refresh();
             this.clientsManager.renderClientsList();
             this.clientsManager.updateClientStats();
             this.bookingsManager.renderBookingsList();
-            this.servicesManager.renderServicesList(); // NOVO
+            this.servicesManager.renderServicesList();
+            this.financeManager.generateFinanceReport(); // NOVO - Atualizar relatório financeiro
             
             this.showClientAlert('Sincronização concluída com sucesso!', 'success');
         } catch (error) {
@@ -430,10 +448,10 @@ class CatarseApp {
         const data = {
             clients: this.clients,
             bookings: this.bookings,
-            services: this.services, // NOVO
+            services: this.services,
             auditLog: this.auditLog,
             exportDate: new Date().toISOString(),
-            version: '1.1' // Atualizada versão
+            version: '1.2' // Atualizada versão com financeiro
         };
         
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -445,6 +463,8 @@ class CatarseApp {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
+        
+        this.showClientAlert('Backup exportado com sucesso!', 'success');
     }
 
     importData(file) {
@@ -457,18 +477,18 @@ class CatarseApp {
                     if (confirm('Isso substituirá todos os dados atuais. Continuar?')) {
                         this.clients = data.clients;
                         this.bookings = data.bookings;
-                        this.services = data.services || []; // NOVO - compatibilidade com versões antigas
+                        this.services = data.services || [];
                         this.auditLog = data.auditLog || [];
                         
                         localStorage.setItem('studio_clients', JSON.stringify(this.clients));
                         localStorage.setItem('studio_bookings', JSON.stringify(this.bookings));
-                        localStorage.setItem('studio_services', JSON.stringify(this.services)); // NOVO
+                        localStorage.setItem('studio_services', JSON.stringify(this.services));
                         localStorage.setItem('studio_audit_log', JSON.stringify(this.auditLog));
                         
                         // Sincronizar com Firebase
                         this.clients.forEach(client => this.firebaseSync.saveClient(client));
                         this.bookings.forEach(booking => this.firebaseSync.saveBooking(booking));
-                        this.services.forEach(service => this.firebaseSync.saveService(service)); // NOVO
+                        this.services.forEach(service => this.firebaseSync.saveService(service));
                         this.auditLog.forEach(log => this.firebaseSync.saveAuditLog(log));
                         
                         // Atualizar todas as visualizações
@@ -476,7 +496,8 @@ class CatarseApp {
                         this.clientsManager.renderClientsList();
                         this.clientsManager.updateClientStats();
                         this.bookingsManager.renderBookingsList();
-                        this.servicesManager.renderServicesList(); // NOVO
+                        this.servicesManager.renderServicesList();
+                        this.financeManager.generateFinanceReport(); // NOVO
                         this.auditLogManager.renderAuditLog();
                         this.auditLogManager.updateLogStats();
                         
@@ -504,7 +525,7 @@ class CatarseApp {
         return this.bookings;
     }
 
-    getServices() { // NOVO
+    getServices() {
         return this.services;
     }
 
@@ -515,6 +536,16 @@ class CatarseApp {
     // NOVO: Método para obter serviços ativos
     getActiveServices() {
         return this.services.filter(service => service.enabled);
+    }
+
+    // NOVO: Método para obter estatísticas financeiras (para uso externo)
+    getFinancialStats(startDate = '', endDate = '') {
+        return this.financeManager.getFinancialStats(startDate, endDate);
+    }
+
+    // NOVO: Método para gerar relatório específico de cliente
+    generateClientFinancialReport(clientId, startDate = '', endDate = '') {
+        return this.financeManager.generateClientReport(clientId, startDate, endDate);
     }
 }
 
