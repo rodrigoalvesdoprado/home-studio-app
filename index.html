@@ -419,6 +419,20 @@
                         <option value="6">6 horas</option>
                     </select>
                 </div>
+
+                <!-- NOVA SEÇÃO: Serviços Contratados -->
+                <div class="form-group">
+                    <label for="booking-services">Serviços Contratados</label>
+                    <div id="booking-services-container">
+                        <div id="booking-services-list" class="services-checkbox-list">
+                            <!-- Serviços serão renderizados dinamicamente via JavaScript -->
+                        </div>
+                        <div id="services-summary" class="services-summary" style="margin-top: 10px; padding: 10px; background: var(--secondary-color); border-radius: 8px;">
+                            <strong>Total: R$ <span id="services-total">0</span></strong>
+                            <br><small>Duração: <span id="services-duration">1</span> hora(s)</small>
+                        </div>
+                    </div>
+                </div>
                 
                 <div class="form-group">
                     <label for="booking-notes">Descrição das Atividades Planejadas</label>
