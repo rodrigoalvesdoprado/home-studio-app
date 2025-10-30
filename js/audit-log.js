@@ -93,7 +93,8 @@ class AuditLogManager {
             
             const entityTexts = {
                 'client': 'Cliente',
-                'booking': 'Agendamento'
+                'booking': 'Agendamento',
+                'service': 'Serviço' // NOVO
             };
             
             let detailsText = '';
@@ -108,11 +109,25 @@ class AuditLogManager {
                     if (log.details.date && log.details.startTime) {
                         detailsText += ` | Data: ${log.details.date} ${log.details.startTime}`;
                     }
+                } else if (log.entity === 'service') { // NOVO
+                    detailsText = `Nome: ${log.details.name || 'N/A'}`;
+                    if (log.details.pricePerHour) {
+                        detailsText += ` | Valor/hora: R$ ${log.details.pricePerHour}`;
+                    }
+                    if (log.details.oldName) {
+                        detailsText += ` | Nome anterior: ${log.details.oldName}`;
+                    }
+                    if (log.details.oldPrice) {
+                        detailsText += ` | Valor anterior: R$ ${log.details.oldPrice}`;
+                    }
                 }
             } else if (log.action === 'delete') {
                 detailsText = `ID: ${log.entityId}`;
                 if (log.details.name) {
                     detailsText += ` | Nome: ${log.details.name}`;
+                }
+                if (log.details.pricePerHour) { // NOVO
+                    detailsText += ` | Valor/hora: R$ ${log.details.pricePerHour}`;
                 }
             } else if (log.action === 'activity') {
                 detailsText = log.details.description || 'Atividade registrada';
@@ -142,11 +157,13 @@ class AuditLogManager {
         ).length;
         const clientLogs = logs.filter(log => log.entity === 'client').length;
         const bookingLogs = logs.filter(log => log.entity === 'booking').length;
+        const serviceLogs = logs.filter(log => log.entity === 'service').length; // NOVO
         
         document.getElementById('total-logs').textContent = totalLogs;
         document.getElementById('today-logs').textContent = todayLogs;
         document.getElementById('client-logs').textContent = clientLogs;
         document.getElementById('booking-logs').textContent = bookingLogs;
+        document.getElementById('service-logs').textContent = serviceLogs; // NOVO
     }
 
     applyLogFilters() {
