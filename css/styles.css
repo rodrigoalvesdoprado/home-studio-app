@@ -783,6 +783,48 @@ input:invalid {
     color: #aaa;
 }
 
+/* ==================== */
+/* NOVOS ESTILOS PARA SERVIÇOS */
+/* ==================== */
+.service-form {
+    background-color: var(--secondary-color);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.service-form:hover {
+    border-color: var(--accent-color);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.service-enabled {
+    border-left: 4px solid var(--success-color);
+}
+
+.service-disabled {
+    border-left: 4px solid var(--error-color);
+    opacity: 0.7;
+}
+
+.service-disabled .booking-info h3 {
+    opacity: 0.6;
+}
+
+.service-disabled .booking-info p {
+    opacity: 0.6;
+}
+
+.services-list .booking-item {
+    margin-bottom: 15px;
+}
+
+.services-list .booking-actions {
+    margin-top: 10px;
+}
+
 /* ESTILOS PARA O LOG DE AUDITORIA */
 .log-filters {
     display: flex;
@@ -1130,6 +1172,17 @@ input:invalid {
     .duplicate-actions .btn {
         flex: 1;
     }
+
+    /* Serviços - Desktop */
+    .services-list .booking-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .services-list .booking-actions {
+        margin-top: 0;
+    }
 }
 
 @media (max-width: 767px) {
@@ -1170,6 +1223,16 @@ input:invalid {
     }
 
     .calendar-nav .btn {
+        justify-content: center;
+    }
+
+    /* Serviços - Mobile */
+    .services-list .booking-actions {
+        flex-direction: column;
+    }
+
+    .services-list .booking-actions .btn {
+        width: 100%;
         justify-content: center;
     }
 }
