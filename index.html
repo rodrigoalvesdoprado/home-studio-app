@@ -46,6 +46,7 @@
                             <a href="#" class="nav-link active" data-page="calendar">Calendário</a>
                             <a href="#" class="nav-link" data-page="clients">Clientes</a>
                             <a href="#" class="nav-link" data-page="bookings">Agendamentos</a>
+                            <a href="#" class="nav-link" data-page="services">Serviços</a>
                             <a href="#" class="nav-link" data-page="reports">Relatórios</a>
                             <a href="#" class="nav-link" data-page="audit">Log do Sistema</a>
                         </div>
@@ -59,6 +60,7 @@
                                 <a href="#" class="nav-link active" data-page="calendar">Calendário</a>
                                 <a href="#" class="nav-link" data-page="clients">Clientes</a>
                                 <a href="#" class="nav-link" data-page="bookings">Agendamentos</a>
+                                <a href="#" class="nav-link" data-page="services">Serviços</a>
                                 <a href="#" class="nav-link" data-page="reports">Relatórios</a>
                                 <a href="#" class="nav-link" data-page="audit">Log do Sistema</a>
                             </div>
@@ -241,6 +243,37 @@
                 <!-- Lista de agendamentos será gerada via JavaScript -->
             </div>
         </section>
+
+        <!-- NOVA PÁGINA: Gerenciamento de Serviços -->
+        <section id="services" class="page">
+            <h2>Gerenciamento de Serviços</h2>
+            
+            <div id="services-alert" class="alert" style="display: none;"></div>
+            
+            <!-- Formulário de Serviço -->
+            <form id="service-form" class="service-form">
+                <input type="hidden" id="service-id">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="service-name">Nome do Serviço</label>
+                        <input type="text" id="service-name" required placeholder="Ex: Ensaio, Gravação, Mixagem...">
+                    </div>
+                    <div class="form-group">
+                        <label for="service-price">Valor por Hora (R$)</label>
+                        <input type="number" id="service-price" min="1" step="0.01" required placeholder="100.00">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn" id="service-submit-btn">Cadastrar Serviço</button>
+                <button type="button" class="btn btn-secondary" id="service-cancel-btn" style="display: none;">Cancelar Edição</button>
+            </form>
+
+            <!-- Lista de Serviços -->
+            <div class="services-list" id="services-list">
+                <!-- Serviços serão gerados via JavaScript -->
+            </div>
+        </section>
         
         <!-- Página de Relatórios -->
         <section id="reports" class="page">
@@ -291,6 +324,7 @@
                         <option value="all">Todas as Entidades</option>
                         <option value="client">Clientes</option>
                         <option value="booking">Agendamentos</option>
+                        <option value="service">Serviços</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -335,6 +369,10 @@
                 <div class="stat-card">
                     <div class="stat-value" id="booking-logs">0</div>
                     <div class="stat-label">Ações em Agendamentos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="service-logs">0</div>
+                    <div class="stat-label">Ações em Serviços</div>
                 </div>
             </div>
             
@@ -417,6 +455,7 @@
     <script src="js/calendar.js"></script>
     <script src="js/clients.js"></script>
     <script src="js/bookings.js"></script>
+    <script src="js/services.js"></script>
     <script src="js/reports.js"></script>
     <script src="js/audit-log.js"></script>
     <script src="js/app.js"></script>
@@ -494,4 +533,3 @@
 
 </body>
 </html>
-
