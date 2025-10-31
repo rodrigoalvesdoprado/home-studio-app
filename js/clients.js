@@ -11,6 +11,7 @@ class ClientsManager {
         
         // NOVO: Estado para controle de duplicatas
         this.pendingClientData = null;
+        this.duplicateResults = null;
         
         this.init();
     }
@@ -141,7 +142,7 @@ class ClientsManager {
 
     // NOVO: Editar cliente existente
     editExistingClient() {
-        if (this.duplicateResults.allMatches.length > 0) {
+        if (this.duplicateResults && this.duplicateResults.allMatches.length > 0) {
             const firstClient = this.duplicateResults.allMatches[0];
             this.closeDuplicateModal();
             this.resetClientForm();
